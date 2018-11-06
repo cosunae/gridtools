@@ -85,6 +85,7 @@ namespace gridtools {
         gt_fortran_array_descriptor descriptor;
         descriptor.type = c_bindings::fortran_array_element_kind<typename T::data_t>::value;
         descriptor.rank = 3;
+        descriptor.is_acc_present = false;
         return descriptor;
     }
 
@@ -98,7 +99,7 @@ namespace {
     using p_out = arg<1, data_store_t>;
 
     auto make_grid(data_store_t data_store) -> decltype(make_grid(0, 0, 0)) {
-        auto dims = data_store.dims();
+        auto dims = data_store.total_lengths();
         return gridtools::make_grid(dims[0], dims[1], dims[2]);
     }
 

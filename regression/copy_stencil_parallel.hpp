@@ -98,9 +98,13 @@ namespace copy_stencil {
     bool test(uint_t d1, uint_t d2, uint_t d3) {
 
         //! [proc_grid_dims]
+        MPI_Comm CartComm;
         array<int, 3> dimensions{0, 0, 1};
+        int period[3] = {1, 1, 1};
         MPI_Dims_create(PROCS, 2, &dimensions[0]);
-        dimensions[2] = 1;
+        assert(dimensions[2] == 1);
+
+        MPI_Cart_create(MPI_COMM_WORLD, 3, &dimensions[0], period, false, &CartComm);
 
         typedef storage_traits<backend_t::backend_id_t>::storage_info_t<0, 3> storage_info_t;
         typedef storage_traits<backend_t::backend_id_t>::data_store_t<float_type, storage_info_t> storage_t;
@@ -117,7 +121,7 @@ namespace copy_stencil {
             gridtools::version_manual>
             pattern_type;
 
-        pattern_type he(gridtools::boollist<3>(false, false, false), GCL_WORLD, dimensions);
+        pattern_type he(gridtools::boollist<3>(false, false, false), CartComm);
 #ifdef VERBOSE
         printf("halo exchange ok\n");
 #endif
@@ -154,8 +158,8 @@ namespace copy_stencil {
 
         storage_t in(storage_info,
             [&storage_info, pi, pj, pk](int i, int j, int k) {
-                int I = i + storage_info.dim<0>() * pi;
-                int J = j + storage_info.dim<1>() * pj;
+                int I = i + storage_info.total_length<0>() * pi;
+                int J = j + storage_info.total_length<1>() * pj;
                 int K = k;
                 return I + J + K;
             },
@@ -213,8 +217,8 @@ namespace copy_stencil {
         auto outv = make_host_view(out);
 #endif
         std::vector<float_type *> vec(2);
-        vec[0] = advanced::get_address_of(inv);
-        vec[1] = advanced::get_address_of(outv);
+        vec[0] = advanced::get_raw_pointer_of(inv);
+        vec[1] = advanced::get_raw_pointer_of(outv);
 
         he.pack(vec);
 
@@ -241,8 +245,8 @@ namespace copy_stencil {
         for (uint_t i = halo[0]; i < d1 - halo[0]; ++i)
             for (uint_t j = halo[1]; j < d2 - halo[1]; ++j)
                 for (uint_t k = 1; k < d3; ++k) {
-                    int I = i + storage_info.dim<0>() * pi;
-                    int J = j + storage_info.dim<1>() * pj;
+                    int I = i + storage_info.total_length<0>() * pi;
+                    int J = j + storage_info.total_length<1>() * pj;
                     int K = k;
 
                     if (v_out_h(i, j, k) != (I + J + K)) {
