@@ -92,6 +92,10 @@ if( COMPONENT_COMMON )
 
 endif()
 
+install(DIRECTORY "include/gridtools/meta" DESTINATION include/gridtools COMPONENT meta )
+install(FILES "include/gridtools/meta.hpp" DESTINATION include/gridtools COMPONENT meta )
+
+
 if( COMPONENT_BOUNDARY_CONDITIONS )
     generate_target_for(NAME boundary-conditions)
     generate_install_targets_for(boundary-conditions boundary-conditions)
