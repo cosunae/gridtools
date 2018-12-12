@@ -52,6 +52,22 @@ target_compile_features( gridtools_common INTERFACE ${GRIDTOOLS_COMPILE_FEATURES
 target_compile_options( gridtools_common INTERFACE $<$<COMPILE_LANGUAGE:CXX>:${GRIDTOOLS_CXX_FLAGS}> )
 target_link_libraries( gridtools_common INTERFACE ${GRIDTOOLS_LINK_LIBRARIES} )
 
+## gridtools_meta ##
+add_library( gridtools_meta INTERFACE )
+target_include_directories( gridtools_meta INTERFACE
+  $<BUILD_INTERFACE:${GRIDTOOLS_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${GRIDTOOLS_SOURCE_DIR}/include/gridtools>
+  $<INSTALL_INTERFACE:include>
+  $<INSTALL_INTERFACE:include/gridtools> )
+target_include_directories( gridtools_meta SYSTEM INTERFACE ${GRIDTOOLS_SYSTEM_INCLUDE_DIRS} )
+target_compile_definitions( gridtools_meta INTERFACE ${GRIDTOOLS_DEFINITIONS} )
+target_compile_features( gridtools_meta INTERFACE ${GRIDTOOLS_COMPILE_FEATURES} )
+target_compile_options( gridtools_meta INTERFACE $<$<COMPILE_LANGUAGE:CXX>:${GRIDTOOLS_CXX_FLAGS}> )
+target_link_libraries( gridtools_meta INTERFACE ${GRIDTOOLS_LINK_LIBRARIES} )
+
+
+
+
 
 ## gridtools_storage ##
 add_library( gridtools_storage INTERFACE )
@@ -100,7 +116,10 @@ endif()
 # =============
 
 gridtools_cmake_workarounds()
-gridtools_export( gridtools_common gridtools_storage )
+gridtools_export( gridtools_common gridtools_storage gridtools_meta)
+
+    install( FILES "${GRIDTOOLS_SOURCE_DIR}/include/gridtools/meta.hpp"
+             DESTINATION include/gridtools )
 
 # =============
 # Tests

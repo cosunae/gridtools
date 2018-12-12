@@ -108,8 +108,8 @@ namespace gridtools {
     struct plus_functor {
         GT_FUNCTION
         constexpr plus_functor() {}
-        template <class T>
-        GT_FUNCTION constexpr T operator()(const T &x, const T &y) const {
+        template <class T1, class T2>
+        GT_FUNCTION constexpr T1 operator()(const T1 &x, const T2 &y) const {
             return x + y;
         }
     };
