@@ -39,8 +39,7 @@
 #include <type_traits>
 
 #include "../../common/defs.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
-#include "../../common/generic_metafunctions/type_traits.hpp"
+#include "../../meta.hpp"
 #include "../bind_functor_with_interval.hpp"
 #include "../compute_extents_metafunctions.hpp"
 #include "../fuse_stages.hpp"
@@ -71,15 +70,15 @@ namespace gridtools {
         template <class Esf>
         struct esf_functor_f;
 
-        GT_META_LAZY_NAMESPASE {
+        GT_META_LAZY_NAMESPACE {
 
             template <class Esf, class Color = typename Esf::color_t::color_t>
             struct get_functors {
                 static constexpr uint_t color = Color::value;
                 static constexpr uint_t n_colors = Esf::location_type::n_colors::value;
 
-                GRIDTOOLS_STATIC_ASSERT(n_colors > 0, GT_INTERNAL_ERROR);
-                GRIDTOOLS_STATIC_ASSERT(color < n_colors, GT_INTERNAL_ERROR);
+                GT_STATIC_ASSERT(n_colors > 0, GT_INTERNAL_ERROR);
+                GT_STATIC_ASSERT(color < n_colors, GT_INTERNAL_ERROR);
 
                 using before_t = GT_META_CALL(meta::repeat_c, (color, void));
                 using after_t = GT_META_CALL(meta::repeat_c, (n_colors - color - 1, void));
@@ -89,7 +88,7 @@ namespace gridtools {
             };
 
             template <class Esf>
-            struct get_functors<Esf, notype> {
+            struct get_functors<Esf, void> {
                 using type = GT_META_CALL(meta::transform,
                     (esf_functor_f<Esf>::template apply,
                         GT_META_CALL(meta::make_indices_c, Esf::location_type::n_colors::value)));
@@ -150,7 +149,7 @@ namespace gridtools {
      * @tparam MssDescriptor -   mss descriptor
      * @tparam ExtentMap -    a compile time map that maps placeholders to computed extents.
      *                        `stages_maker` uses ExtentMap parameter in an opaque way -- it just delegates it to
-     *                        get_extent_for/reduction_get_extent_for when it is needed.
+     *                        `get_extent_for` when it is needed.
      *
      *   This metafunction returns another metafunction (i.e. has nested `apply` metafunction) that accepts
      *   a single argument that has to be a level_index and returns the stages (classes that model Stage concept)

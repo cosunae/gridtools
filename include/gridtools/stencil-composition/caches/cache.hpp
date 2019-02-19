@@ -48,8 +48,7 @@
 #include <boost/fusion/include/std_tuple.hpp>
 
 #include "../../common/defs.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
-#include "../../common/generic_metafunctions/type_traits.hpp"
+#include "../../meta/type_traits.hpp"
 #include "../arg.hpp"
 #include "../interval.hpp"
 #include "../location_type.hpp"
@@ -64,25 +63,27 @@ namespace gridtools {
          * Caching assumes a parallelization model where all the processing all elements in the vertical dimension are
          * private to each parallel thread,
          * while the processing of grid points in the horizontal plane is executed by different parallel threads.
-         * Those caches that cover data in the horizontal (IJ and IJK) are accessed by parallel core units, and
-         * therefore require synchronization capabilities (for example shared memory in the GPU), like IJ or IJK caches.
+         * Those caches that cover data in the horizontal (IJ) are accessed by parallel core units, and
+         * therefore require synchronization capabilities (for example shared memory in the GPU), like IJ caches.
          * On the contrary caches in the K dimension are only accessed by one thread, and therefore resources can be
-         * allocated
-         * in on-chip without synchronization capabilities (for example registers in GPU)
+         * allocated in on-chip without synchronization capabilities (for example registers in GPU)
          * @tparam  cacheType type of cache
          * @tparam Arg argument with parameter being cached
          * @tparam CacheIOPolicy IO policy for cache
-         * @tparam Interval vertical interval of validity of the cache
          */
-        template <cache_type CacheType, class Arg, cache_io_policy cacheIOPolicy, class Interval>
+        template <cache_type CacheType, class Arg, cache_io_policy cacheIOPolicy>
         struct cache_impl {
-            GRIDTOOLS_STATIC_ASSERT(is_plh<Arg>::value, GT_INTERNAL_ERROR);
+            GT_STATIC_ASSERT(is_plh<Arg>::value, GT_INTERNAL_ERROR);
             using arg_t = Arg;
-            using interval_t = Interval;
             static constexpr cache_type cacheType = CacheType;
-            static constexpr cache_io_policy ccacheIOPolicy = cacheIOPolicy;
         };
     } // namespace detail
+
+    template <typename T>
+    struct is_cache : std::false_type {};
+
+    template <cache_type cacheType, class Arg, cache_io_policy cacheIOPolicy>
+    struct is_cache<detail::cache_impl<cacheType, Arg, cacheIOPolicy>> : std::true_type {};
 
     /**
      *	@brief function that forms a vector of caches that share the same cache type and input/output policy
@@ -91,25 +92,17 @@ namespace gridtools {
      *	@tparam Args arbitrary number of storages that should be cached
      *	@return tuple of caches
      */
-    template <cache_type cacheType, cache_io_policy cacheIOPolicy, class Interval = void, class... Args>
-    std::tuple<detail::cache_impl<cacheType, Args, cacheIOPolicy, Interval>...> cache(Args...) {
-        GRIDTOOLS_STATIC_ASSERT(sizeof...(Args) > 0, "Cannot build cache sequence without argument");
-        GRIDTOOLS_STATIC_ASSERT(
+    template <cache_type cacheType, cache_io_policy cacheIOPolicy, class... Args>
+    std::tuple<detail::cache_impl<cacheType, Args, cacheIOPolicy>...> cache(Args...) {
+        GT_STATIC_ASSERT(sizeof...(Args) > 0, "Cannot build cache sequence without argument");
+        GT_STATIC_ASSERT(
             conjunction<is_plh<Args>...>::value, "argument passed to cache is not of the right arg<> type");
         // TODO ICO_STORAGE
-#ifndef STRUCTURED_GRIDS
-        GRIDTOOLS_STATIC_ASSERT(
+#ifndef GT_STRUCTURED_GRIDS
+        GT_STATIC_ASSERT(
             (!disjunction<std::is_same<typename Args::location_t, enumtype::default_location_type>...>::value),
             "args in irregular grids require a location type");
 #endif
-        GRIDTOOLS_STATIC_ASSERT(std::is_void<Interval>::value || cacheType == K,
-            "Passing an interval to the cache<> construct is only allowed and required by the K caches");
-        GRIDTOOLS_STATIC_ASSERT(
-            !std::is_void<Interval>::value || cacheType != K || cacheIOPolicy == cache_io_policy::local,
-            "cache<K, ... > construct requires an interval (unless the IO policy is local)");
-        GRIDTOOLS_STATIC_ASSERT(std::is_void<Interval>::value || is_interval<Interval>::value,
-            "Invalid Interval type passed to cache construct");
-
         return {};
     }
 } // namespace gridtools

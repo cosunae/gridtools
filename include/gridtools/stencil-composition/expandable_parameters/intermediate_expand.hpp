@@ -44,9 +44,9 @@
 
 #include "../../common/defs.hpp"
 #include "../../common/functional.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
 #include "../../common/split_args.hpp"
 #include "../../common/tuple_util.hpp"
+#include "../../meta.hpp"
 #include "../arg.hpp"
 #include "../conditionals/condition_tree.hpp"
 #include "../esf_fwd.hpp"
@@ -78,7 +78,7 @@ namespace gridtools {
              *     (meta class). He the inner name `apply` is not arbitrary. It just the requirement of meta class
              *     concept.
              */
-            GT_META_LAZY_NAMESPASE {
+            GT_META_LAZY_NAMESPACE {
                 template <size_t I, class Plh>
                 struct convert_plh {
                     using type = Plh;
@@ -92,10 +92,10 @@ namespace gridtools {
                 template <class I, class Cache>
                 struct convert_cache;
 
-                template <class I, cache_type CacheType, class Plh, cache_io_policy cacheIOPolicy, class Interval>
-                struct convert_cache<I, detail::cache_impl<CacheType, Plh, cacheIOPolicy, Interval>> {
-                    using type = detail::
-                        cache_impl<CacheType, typename convert_plh<I::value, Plh>::type, cacheIOPolicy, Interval>;
+                template <class I, cache_type CacheType, class Plh, cache_io_policy cacheIOPolicy>
+                struct convert_cache<I, detail::cache_impl<CacheType, Plh, cacheIOPolicy>> {
+                    using type =
+                        detail::cache_impl<CacheType, typename convert_plh<I::value, Plh>::type, cacheIOPolicy>;
                 };
 
                 template <class I, class ArgStoragePair>
@@ -131,7 +131,8 @@ namespace gridtools {
                 class Caches,
                 class Indices = GT_META_CALL(meta::make_indices_c, ExpandFactor),
                 class IndicesAndCaches = GT_META_CALL(meta::cartesian_product, (Indices, Caches)),
-                class ExpandedCaches = GT_META_CALL(meta::transform, (convert_cache_f, IndicesAndCaches))>
+                class RawExpandedCaches = GT_META_CALL(meta::transform, (convert_cache_f, IndicesAndCaches)),
+                class ExpandedCaches = GT_META_CALL(meta::dedup, RawExpandedCaches)>
             GT_META_DEFINE_ALIAS(expand_caches, meta::rename, (meta::ctor<std::tuple<>>::apply, ExpandedCaches));
 
             template <size_t ExpandFactor, class ArgStoragePair>
@@ -186,7 +187,7 @@ namespace gridtools {
             template <size_t ExpandFactor>
             struct expand_esf_f;
 
-            GT_META_LAZY_NAMESPASE {
+            GT_META_LAZY_NAMESPACE {
                 template <size_t ExpandFactor, class Esf>
                 struct expand_esf {
                     using indices_t = GT_META_CALL(meta::make_indices_c, ExpandFactor);
@@ -382,7 +383,7 @@ namespace gridtools {
                   grid, split_args_tuple<_impl::expand_detail::is_expandable>(std::move(arg_storage_pairs)), msses) {}
 
         template <class... Args, class... DataStores>
-        notype run(arg_storage_pair<Args, DataStores> const &... args) {
+        void run(arg_storage_pair<Args, DataStores> const &... args) {
             m_meter.start();
             // split arguments to expandable and plain arg_storage_pairs
             auto arg_groups = split_args<_impl::expand_detail::is_expandable>(args...);
@@ -410,7 +411,6 @@ namespace gridtools {
                     m_intermediate_remainder, tuple_util::flatten(std::tie(plain_args, converted_args)));
             }
             m_meter.pause();
-            return {};
         }
 
         void sync_bound_data_stores() const {
@@ -426,5 +426,12 @@ namespace gridtools {
         size_t get_count() const { return m_meter.count(); }
 
         void reset_meter() { m_meter.reset(); }
+
+        template <class Placeholder>
+        static constexpr auto get_arg_extent(Placeholder) GT_AUTO_RETURN(converted_intermediate<1>::get_arg_extent(
+            GT_META_CALL(_impl::expand_detail::convert_plh, (0, Placeholder)){}));
+        template <class Placeholder>
+        static constexpr auto get_arg_intent(Placeholder) GT_AUTO_RETURN(converted_intermediate<1>::get_arg_intent(
+            GT_META_CALL(_impl::expand_detail::convert_plh, (0, Placeholder)){}));
     };
 } // namespace gridtools

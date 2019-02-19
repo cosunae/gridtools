@@ -48,13 +48,13 @@
 #include <boost/fusion/include/make_vector.hpp>
 #include <boost/mpl/equal.hpp>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-#include "backend_select.hpp"
 #include <gridtools/stencil-composition/backend.hpp>
 #include <gridtools/stencil-composition/make_computation.hpp>
 #include <gridtools/stencil-composition/make_stencils.hpp>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/tools/backend_select.hpp>
 
 namespace positional_when_debug_test {
 
@@ -63,11 +63,11 @@ namespace positional_when_debug_test {
     using x_interval = axis_t::get_interval<0>;
 
     struct test_functor {
-        typedef gridtools::accessor<0, gridtools::enumtype::inout> in;
-        typedef boost::mpl::vector1<in> arg_list;
+        typedef gridtools::accessor<0, gridtools::intent::inout> in;
+        typedef gridtools::make_param_list<in> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval, x_interval) {
+        GT_FUNCTION static void apply(Evaluation &eval, x_interval) {
             eval.i();
             eval.j();
             eval.k();
@@ -78,7 +78,7 @@ namespace positional_when_debug_test {
 TEST(test_make_computation, positional_when_debug) {
 
     using namespace gridtools;
-    using namespace gridtools::enumtype;
+    using namespace gridtools::execute;
 
     typedef backend_t::storage_traits_t::storage_info_t<0, 3> meta_data_t;
     typedef backend_t::storage_traits_t::data_store_t<float_type, meta_data_t> storage_t;
@@ -86,8 +86,7 @@ TEST(test_make_computation, positional_when_debug) {
     typedef arg<0, storage_t> p_in;
 
     make_computation<backend_t>(positional_when_debug_test::grid_t(halo_descriptor{}, halo_descriptor{}, {0, 0}),
-        make_multistage // mss_descriptor
-        (execute<forward>(), make_stage<positional_when_debug_test::test_functor>(p_in())));
+        make_multistage(execute::forward(), make_stage<positional_when_debug_test::test_functor>(p_in())));
 }
 
 #ifdef __WAS_DEBUG

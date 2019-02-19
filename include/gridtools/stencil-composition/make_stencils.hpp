@@ -41,8 +41,10 @@
 #include <boost/fusion/include/std_tuple.hpp>
 
 #include "../common/defs.hpp"
-#include "../common/generic_metafunctions/meta.hpp"
-#include "../common/generic_metafunctions/type_traits.hpp"
+#include "../meta/flatten.hpp"
+#include "../meta/list.hpp"
+#include "../meta/macros.hpp"
+#include "../meta/type_traits.hpp"
 #include "independent_esf.hpp"
 #include "mss.hpp"
 #include "mss_metafunctions.hpp"
@@ -64,10 +66,9 @@ namespace gridtools {
     } // namespace _impl
 
     /*!
-       \fn mss_descriptor<...> make_esf(ExecutionEngine, esf1, esf2, ...)
        \brief Function to create a Multistage Stencil that can then be executed
-       \param esf{i}  i-th Elementary Stencil Function created with make_esf or a list specified as independent ESFs
-       created with make independent
+       \param esf{i}  i-th Elementary Stencil Function created with ::gridtools::make_stage or a list specified as
+       independent ESF created with ::gridtools::make_independent
 
        Use this function to create a multi-stage stencil computation
      */
@@ -76,10 +77,10 @@ namespace gridtools {
         GT_META_CALL(extract_mss_esfs, (MssParameters...)),
         typename extract_mss_caches<MssParameters...>::type>
     make_multistage(ExecutionEngine, MssParameters...) {
-        GRIDTOOLS_STATIC_ASSERT((is_execution_engine<ExecutionEngine>::value),
-            "The first argument passed to make_multistage must be the execution engine (e.g. execute<forward>(), "
-            "execute<backward>(), execute<parallel>()");
-        GRIDTOOLS_STATIC_ASSERT(conjunction<is_mss_parameter<MssParameters>...>::value,
+        GT_STATIC_ASSERT((is_execution_engine<ExecutionEngine>::value),
+            "The first argument passed to make_multistage must be the execution engine (e.g. execute::forward(), "
+            "execute::backward(), execute::parallel())");
+        GT_STATIC_ASSERT(conjunction<is_mss_parameter<MssParameters>...>::value,
             "wrong set of mss parameters passed to make_multistage construct.\n"
             "Check that arguments passed are either :\n"
             " * caches from define_caches(...) construct or\n"
@@ -88,7 +89,6 @@ namespace gridtools {
     }
 
     /*!
-       \fn independent_esf<...> make_independent(esf1, esf2, ...)
        \brief Function to create a list of independent Elementary Stencil Functions
 
        \param esf{i}  (must be i>=2) The max{i} Elementary Stencil Functions in the argument list will be treated as

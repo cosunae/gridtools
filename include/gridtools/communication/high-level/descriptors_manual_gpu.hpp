@@ -34,7 +34,7 @@
   For information: http://eth-cscs.github.io/gridtools/
 */
 
-#include "../../common/generic_metafunctions/gt_integer_sequence.hpp"
+#include "../../meta/utility.hpp"
 
 #ifdef __CUDACC__
 #include "m_packXL.hpp"
@@ -172,7 +172,7 @@ namespace gridtools {
         explicit hndlr_dynamic_ut(grid_type const &g) : base_type(g), halo() {}
 
         ~hndlr_dynamic_ut() {
-#ifdef _GCL_CHECK_DESTRUCTOR
+#ifdef GCL_CHECK_DESTRUCTOR
             std::cout << "Destructor " << __FILE__ << ":" << __LINE__ << std::endl;
 #endif
 
@@ -423,15 +423,15 @@ namespace gridtools {
                                     kk_P);
                             } else {
                                 send_size[translate()(ii, jj, kk)] = 0;
-                                send_buffer[translate()(ii, jj, kk)] = NULL;
+                                send_buffer[translate()(ii, jj, kk)] = nullptr;
 
-                                base_type::m_haloexch.register_send_to_buffer(NULL, 0, ii_P, jj_P, kk_P);
+                                base_type::m_haloexch.register_send_to_buffer(nullptr, 0, ii_P, jj_P, kk_P);
 
                                 recv_size[translate()(ii, jj, kk)] = 0;
 
-                                recv_buffer[translate()(ii, jj, kk)] = NULL;
+                                recv_buffer[translate()(ii, jj, kk)] = nullptr;
 
-                                base_type::m_haloexch.register_receive_from_buffer(NULL, 0, ii_P, jj_P, kk_P);
+                                base_type::m_haloexch.register_receive_from_buffer(nullptr, 0, ii_P, jj_P, kk_P);
                             }
                         }
 
@@ -515,7 +515,7 @@ namespace gridtools {
         template <typename... Pointers>
         void pack(const Pointers *... fields) {
             typedef translate_t<3, default_layout_map<3>::type> translate;
-            auto ints = typename make_gt_integer_sequence<unsigned int, sizeof...(Pointers)>::type{};
+            auto ints = meta::make_integer_sequence<unsigned int, sizeof...(Pointers)>{};
             if (send_size[translate()(0, 0, -1)]) {
                 m_packZL_variadic(d_send_buffer, d_send_size, dangeroushalo, halo_d, std::make_tuple(fields...), ints);
             }
@@ -554,7 +554,7 @@ namespace gridtools {
 
         template <typename... Pointers>
         void unpack(Pointers *... fields) {
-            auto ints = typename make_gt_integer_sequence<unsigned int, sizeof...(Pointers)>::type{};
+            auto ints = meta::make_integer_sequence<unsigned int, sizeof...(Pointers)>{};
             typedef translate_t<3, default_layout_map<3>::type> translate;
             if (recv_size[translate()(0, 0, -1)]) {
                 m_unpackZL_variadic(

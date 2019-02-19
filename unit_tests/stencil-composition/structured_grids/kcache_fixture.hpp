@@ -35,11 +35,12 @@
 */
 #pragma once
 
-#include "backend_select.hpp"
-#include "gtest/gtest.h"
-#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gtest/gtest.h>
 
-using axis_t = gridtools::axis<3>::with_extra_offsets<1>::with_offset_limit<3>;
+#include <gridtools/stencil-composition/stencil-composition.hpp>
+#include <gridtools/tools/backend_select.hpp>
+
+using axis_t = gridtools::axis<3, 1, 3>;
 using axis = axis_t::axis_interval_t;
 
 using kfull = axis_t::full_interval;
@@ -75,8 +76,7 @@ using fullminustwofirst = midbody::modify<0, 2>;
 class kcachef : public ::testing::Test {
   protected:
     typedef gridtools::storage_traits<backend_t::backend_id_t>::storage_info_t<0, 3> storage_info_t;
-    typedef gridtools::storage_traits<backend_t::backend_id_t>::data_store_t<gridtools::float_type, storage_info_t>
-        storage_t;
+    typedef gridtools::storage_traits<backend_t::backend_id_t>::data_store_t<float_type, storage_info_t> storage_t;
 
     const gridtools::uint_t m_d1, m_d2, m_d3;
 
@@ -86,7 +86,7 @@ class kcachef : public ::testing::Test {
 
     storage_info_t m_meta;
     storage_t m_in, m_out, m_ref;
-    gridtools::data_view<storage_t, gridtools::access_mode::ReadWrite> m_inv, m_outv, m_refv;
+    gridtools::data_view<storage_t, gridtools::access_mode::read_write> m_inv, m_outv, m_refv;
 
     kcachef()
         : m_d1(6), m_d2(6), m_d3(10), m_di{0, 0, 0, m_d1 - 1, m_d1}, m_dj{0, 0, 0, m_d2 - 1, m_d2},

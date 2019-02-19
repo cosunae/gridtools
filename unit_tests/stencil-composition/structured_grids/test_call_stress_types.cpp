@@ -33,19 +33,21 @@
 
   For information: http://eth-cscs.github.io/gridtools/
 */
-#include "backend_select.hpp"
-#include "gtest/gtest.h"
-#include <gridtools/common/generic_metafunctions/gt_remove_qualifiers.hpp>
+#include <gtest/gtest.h>
+
+#include <gridtools/meta/type_traits.hpp>
 #include <gridtools/stencil-composition/stencil-composition.hpp>
 #include <gridtools/stencil-composition/stencil-functions/stencil-functions.hpp>
-#include <test_helper.hpp>
+#include <gridtools/tools/backend_select.hpp>
+
+#include "../../test_helper.hpp"
 
 /**
  * Compile-time test to ensure that types are correct in all call stages
  */
 
 using namespace gridtools;
-using namespace gridtools::enumtype;
+using namespace gridtools::execute;
 using namespace gridtools::expressions;
 
 namespace {
@@ -89,14 +91,14 @@ namespace {
     struct simple_callee_with_forced_return_type {
         typedef in_accessor<0> in;
         typedef inout_accessor<1> out;
-        typedef boost::mpl::vector<in, out> arg_list;
+        typedef make_param_list<in, out> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             (void)ASSERT_TYPE_EQ<special_type<forced_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in{}))>::type;
+            using in1_type = decay_t<decltype(eval(in{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
         }
     };
@@ -104,10 +106,10 @@ namespace {
     struct simple_caller_with_forced_return_type {
         typedef in_accessor<0> in;
         typedef inout_accessor<1> out;
-        typedef boost::mpl::vector<in, out> arg_list;
+        typedef make_param_list<in, out> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
+        GT_FUNCTION static void apply(Evaluation &eval) {
             auto result =
                 call<simple_callee_with_forced_return_type>::return_type<special_type<forced_tag>>::with(eval, in{});
 
@@ -122,7 +124,7 @@ TEST_F(call_stress_types, simple_force_return_type) {
         p_in1{} = in1,
         p_out{} = out,
         gridtools::make_multistage(
-            execute<forward>(), gridtools::make_stage<simple_caller_with_forced_return_type>(p_in1(), p_out())));
+            execute::forward(), gridtools::make_stage<simple_caller_with_forced_return_type>(p_in1(), p_out())));
     comp.run();
 }
 
@@ -130,14 +132,14 @@ namespace {
     struct simple_callee_with_deduced_return_type {
         typedef in_accessor<0> in;
         typedef inout_accessor<1> out;
-        typedef boost::mpl::vector<in, out> arg_list;
+        typedef make_param_list<in, out> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in{}))>::type;
+            using in1_type = decay_t<decltype(eval(in{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
         }
     };
@@ -145,10 +147,10 @@ namespace {
     struct simple_caller_with_deduced_return_type {
         typedef in_accessor<0> in;
         typedef inout_accessor<1> out;
-        typedef boost::mpl::vector<in, out> arg_list;
+        typedef make_param_list<in, out> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
+        GT_FUNCTION static void apply(Evaluation &eval) {
             auto result = call<simple_callee_with_deduced_return_type>::with(eval, in{});
 
             using result_type = decltype(result);
@@ -162,7 +164,7 @@ TEST_F(call_stress_types, simple_deduced_return_type) {
         p_in1{} = in1,
         p_out{} = out,
         gridtools::make_multistage(
-            execute<forward>(), gridtools::make_stage<simple_caller_with_deduced_return_type>(p_in1(), p_out())));
+            execute::forward(), gridtools::make_stage<simple_caller_with_deduced_return_type>(p_in1(), p_out())));
     comp.run();
 }
 
@@ -174,21 +176,21 @@ namespace {
         typedef in_accessor<1> local;
         typedef inout_accessor<2> out;
         typedef in_accessor<3> in1;
-        typedef boost::mpl::vector<in2, local, out, in1> arg_list;
+        typedef make_param_list<in2, local, out, in1> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             // the new convention is that the return type (here "out) is deduced from the first argument in the call
             (void)ASSERT_TYPE_EQ<special_type<in2_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in1{}))>::type;
+            using in1_type = decay_t<decltype(eval(in1{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
 
-            using in2_type = typename remove_qualifiers<decltype(eval(in2{}))>::type;
+            using in2_type = decay_t<decltype(eval(in2{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in2_tag>, in2_type>{};
 
-            using local_type = typename remove_qualifiers<decltype(eval(local{}))>::type;
+            using local_type = decay_t<decltype(eval(local{}))>;
             (void)ASSERT_TYPE_EQ<special_type<local_tag>, local_type>{};
         }
     };
@@ -197,18 +199,18 @@ namespace {
         typedef in_accessor<0> in1;
         typedef inout_accessor<1> out;
         typedef in_accessor<2> in2;
-        typedef boost::mpl::vector<in1, out, in2> arg_list;
+        typedef make_param_list<in1, out, in2> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             // the expected type differs here in "call" vs "call_proc"
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in1{}))>::type;
+            using in1_type = decay_t<decltype(eval(in1{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
 
-            using in2_type = typename remove_qualifiers<decltype(eval(in2{}))>::type;
+            using in2_type = decay_t<decltype(eval(in2{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in2_tag>, in2_type>{};
 
             special_type<local_tag> local{};
@@ -223,17 +225,17 @@ namespace {
         typedef in_accessor<0> in1;
         typedef inout_accessor<1> out;
         typedef in_accessor<2> in2;
-        typedef boost::mpl::vector<in1, out, in2> arg_list;
+        typedef make_param_list<in1, out, in2> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             (void)ASSERT_TYPE_EQ<special_type<out_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in1{}))>::type;
+            using in1_type = decay_t<decltype(eval(in1{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
 
-            using in2_type = typename remove_qualifiers<decltype(eval(in2{}))>::type;
+            using in2_type = decay_t<decltype(eval(in2{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in2_tag>, in2_type>{};
 
             auto result = call<triple_nesting_with_type_switching_second_stage>::with(eval, in1(), in2());
@@ -248,7 +250,7 @@ TEST_F(call_stress_types, triple_nesting_with_type_switching) {
         p_in1{} = in1,
         p_in2{} = in2,
         p_out{} = out,
-        gridtools::make_multistage(execute<forward>(),
+        gridtools::make_multistage(execute::forward(),
             gridtools::make_stage<triple_nesting_with_type_switching_first_stage>(p_in1(), p_out(), p_in2())));
     comp.run();
 }
@@ -258,19 +260,19 @@ namespace {
         typedef in_accessor<0> in1;
         typedef inout_accessor<1> out;
         typedef in_accessor<2> in2;
-        typedef boost::mpl::vector<in1, out, in2> arg_list;
+        typedef make_param_list<in1, out, in2> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             // in contrast to the example where this is stage is called from "call" (not "call_proc")
             // the type here is different!
             (void)ASSERT_TYPE_EQ<special_type<out_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in1{}))>::type;
+            using in1_type = decay_t<decltype(eval(in1{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
 
-            using in2_type = typename remove_qualifiers<decltype(eval(in2{}))>::type;
+            using in2_type = decay_t<decltype(eval(in2{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in2_tag>, in2_type>{};
 
             special_type<local_tag> local{};
@@ -285,17 +287,17 @@ namespace {
         typedef in_accessor<0> in1;
         typedef inout_accessor<1> out;
         typedef in_accessor<2> in2;
-        typedef boost::mpl::vector<in1, out, in2> arg_list;
+        typedef make_param_list<in1, out, in2> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
-            using out_type = typename remove_qualifiers<decltype(eval(out{}))>::type;
+        GT_FUNCTION static void apply(Evaluation &eval) {
+            using out_type = decay_t<decltype(eval(out{}))>;
             (void)ASSERT_TYPE_EQ<special_type<out_tag>, out_type>{};
 
-            using in1_type = typename remove_qualifiers<decltype(eval(in1{}))>::type;
+            using in1_type = decay_t<decltype(eval(in1{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in1_tag>, in1_type>{};
 
-            using in2_type = typename remove_qualifiers<decltype(eval(in2{}))>::type;
+            using in2_type = decay_t<decltype(eval(in2{}))>;
             (void)ASSERT_TYPE_EQ<special_type<in2_tag>, in2_type>{};
 
             call_proc<triple_nesting_with_type_switching_and_call_proc_second_stage>::with(eval, in1(), out(), in2());
@@ -308,7 +310,7 @@ TEST_F(call_stress_types, triple_nesting_with_type_switching_and_call_proc) {
         p_in1{} = in1,
         p_in2{} = in2,
         p_out{} = out,
-        gridtools::make_multistage(execute<forward>(),
+        gridtools::make_multistage(execute::forward(),
             gridtools::make_stage<triple_nesting_with_type_switching_and_call_proc_first_stage>(
                 p_in1(), p_out(), p_in2())));
     comp.run();

@@ -62,9 +62,6 @@
 #elif defined(_MSC_VER)
 #define GT_DEPRECATED(msg) __declspec(deprecated)
 #else
-#ifndef SUPPRESS_MESSAGES
-#pragma message("WARNING: You need to implement GT_DEPRECATED for this compiler")
-#endif
 #define GT_DEPRECATED(msg)
 #endif
 #endif
@@ -80,11 +77,11 @@
 
 /** Macro to enable additional checks that may catch some errors in user code
  */
-#ifndef PEDANTIC_DISABLED
-#define PEDANTIC
+#ifndef GT_PEDANTIC_DISABLED
+#define GT_PEDANTIC
 #endif
 
-#define RESTRICT __restrict__
+#define GT_RESTRICT __restrict__
 
 #define GT_NO_ERRORS 0
 #define GT_ERROR_NO_TEMPS 1
@@ -105,9 +102,10 @@
 #endif
 
 // max limit of indices for metastorages, beyond indices are reserved for library
-#ifndef META_STORAGE_INDEX_LIMIT
-#define META_STORAGE_INDEX_LIMIT 1000
+#ifndef GT_META_STORAGE_INDEX_LIMIT
+#define GT_META_STORAGE_INDEX_LIMIT 1000
 #endif
+static const unsigned int metastorage_library_indices_limit = GT_META_STORAGE_INDEX_LIMIT;
 
 #if defined(_OPENMP)
 #include <omp.h>
@@ -121,26 +119,9 @@ namespace gridtools {
 #endif
 
 // macro defining empty copy constructors and assignment operators
-#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-    TypeName(const TypeName &);            \
+#define GT_DISALLOW_COPY_AND_ASSIGN(TypeName) \
+    TypeName(const TypeName &);               \
     TypeName &operator=(const TypeName &)
-
-// some compilers have the problem that template alias instantiations have exponential complexity
-#if !defined(GT_BROKEN_TEMPLATE_ALIASES)
-#if defined(__CUDACC_VER_MAJOR__)
-// CUDA 9.0 and 9.1 have an different problem (not related to the exponential complexity of template alias
-// instantiation) see https://github.com/eth-cscs/gridtools/issues/976
-#define GT_BROKEN_TEMPLATE_ALIASES (__CUDACC_VER_MAJOR__ < 9)
-#elif defined(__INTEL_COMPILER)
-#define GT_BROKEN_TEMPLATE_ALIASES (__INTEL_COMPILER < 1800)
-#elif defined(__clang__)
-#define GT_BROKEN_TEMPLATE_ALIASES 0
-#elif defined(__GNUC__) && defined(__GNUC_MINOR__)
-#define GT_BROKEN_TEMPLATE_ALIASES (__GNUC__ * 10 + __GNUC_MINOR__ < 47)
-#else
-#define GT_BROKEN_TEMPLATE_ALIASES 1
-#endif
-#endif
 
 // check boost::optional workaround for CUDA9.2
 #if (defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ == 9 && __CUDACC_VER_MINOR__ == 2)
@@ -179,35 +160,7 @@ namespace gridtools {
         struct icosahedral {};
     } // namespace grid_type
 
-    /** \namespace enumtype
-       @brief enumeration types*/
-    namespace enumtype {
-        /**
-           @section enumtypes Gridtools enumeration types
-           @{
-         */
-
-        /*
-         * accessor I/O policy
-         */
-        enum intent { in, inout };
-
-#ifdef __CUDACC__
-        static const unsigned int vector_width = 32;
-#else
-        static const unsigned int vector_width = 4;
-#endif
-        static const unsigned int metastorage_library_indices_limit = META_STORAGE_INDEX_LIMIT;
-
-    } // namespace enumtype
-
-#ifdef STRUCTURED_GRIDS
-#define GRIDBACKEND gridtools::grid_type::structured
-#else
-#define GRIDBACKEND gridtools::grid_type::icosahedral
-#endif
-
-#define GRIDTOOLS_STATIC_ASSERT(Condition, Message) static_assert((Condition), "\n\nGRIDTOOLS ERROR=> " Message "\n\n")
+#define GT_STATIC_ASSERT(Condition, Message) static_assert((Condition), "\n\nGRIDTOOLS ERROR=> " Message "\n\n")
 
 #define GT_INTERNAL_ERROR                                                                                       \
     "GridTools encountered an internal error. Please submit the error message produced by the compiler to the " \
@@ -226,6 +179,14 @@ namespace gridtools {
     static_assert(1, "")
 #endif
 
+#if defined(__CUDACC_VER_MAJOR__) && __CUDACC_VER_MAJOR__ < 9
+#define GT_DECLARE_DEFAULT_EMPTY_CTOR(class_name)                          \
+    __forceinline__ __host__ __device__ constexpr class_name() noexcept {} \
+    static_assert(1, "")
+#else
+#define GT_DECLARE_DEFAULT_EMPTY_CTOR(class_name) class_name() = default
+#endif
+
     //################ Type aliases for GridTools ################
 
     /**
@@ -237,26 +198,6 @@ namespace gridtools {
        with an unsigned iteration index.
        https://gcc.gnu.org/bugzilla/show_bug.cgi?id=48052
     */
-
-#ifndef FLOAT_PRECISION
-#define FLOAT_PRECISION 8
-#endif
-
-#if FLOAT_PRECISION == 4
-    typedef float float_type;
-#define ASSERT_REAL_EQ(reference, actual) ASSERT_FLOAT_EQ(reference, actual)
-#define EXPECT_REAL_EQ(reference, actual) EXPECT_FLOAT_EQ(reference, actual)
-#elif FLOAT_PRECISION == 8
-    typedef double float_type;
-#define ASSERT_REAL_EQ(reference, actual) ASSERT_DOUBLE_EQ(reference, actual)
-#define EXPECT_REAL_EQ(reference, actual) EXPECT_DOUBLE_EQ(reference, actual)
-#else
-#error float precision not properly set (4 or 8 bytes supported)
-#endif
-
-    // define a gridtools notype for metafunctions that would return something like void
-    // but still to point to a real integral type so that it can be passed as argument to functions
-    typedef int notype;
 
     using int_t = int;
     using short_t = int;

@@ -37,8 +37,7 @@
 #pragma once
 
 #include "../../../common/generic_metafunctions/for_each.hpp"
-#include "../../../common/generic_metafunctions/meta.hpp"
-#include "../../../common/generic_metafunctions/type_traits.hpp"
+#include "../../../meta.hpp"
 #include "../../grid_traits.hpp"
 #include "../../iteration_policy.hpp"
 #include "../../loop_interval.hpp"
@@ -55,12 +54,8 @@ namespace gridtools {
             (iterate_domain_mc<iterate_domain_arguments<typename RunFunctorArguments::backend_ids_t,
                     typename RunFunctorArguments::local_domain_t,
                     typename RunFunctorArguments::esf_sequence_t,
-                    typename RunFunctorArguments::extent_sizes_t,
-                    typename RunFunctorArguments::max_extent_t,
                     typename RunFunctorArguments::cache_sequence_t,
-                    typename RunFunctorArguments::grid_t,
-                    typename RunFunctorArguments::is_reduction_t,
-                    typename RunFunctorArguments::reduction_data_t::reduction_type_t>>));
+                    typename RunFunctorArguments::grid_t>>));
 
         /**
          * @brief Meta function to check if all ESFs can be computed independently per column. This is possible if the
@@ -76,7 +71,7 @@ namespace gridtools {
                    missing vector-sized k-caches and possibly alignment issues. */
                 false>;
 
-        constexpr int_t veclength_mc = 64 / sizeof(float_type);
+        constexpr int_t veclength_mc = 16;
 
         /**
          * @brief Class for inner (block-level) looping.
@@ -108,7 +103,7 @@ namespace gridtools {
             template <template <class...> class L, class Stage, class Index>
             GT_FUNCTION void operator()(L<Stage, Index>) const {
                 using execution_type_t = typename RunFunctorArguments::execution_type_t;
-                using iteration_policy_t = iteration_policy<From, To, execution_type_t::iteration>;
+                using iteration_policy_t = iteration_policy<From, To, execution_type_t>;
 
                 const int_t k_first = m_grid.template value_at<From>();
                 const int_t k_last = m_grid.template value_at<To>();
@@ -164,7 +159,7 @@ namespace gridtools {
             template <class Stage>
             GT_FUNCTION void operator()(Stage) const {
                 using execution_type_t = typename RunFunctorArguments::execution_type_t;
-                using iteration_policy_t = iteration_policy<From, To, execution_type_t::iteration>;
+                using iteration_policy_t = iteration_policy<From, To, execution_type_t>;
                 using extent_t = typename Stage::extent_t;
 
                 const int_t i_first = extent_t::iminus::value;
@@ -374,30 +369,25 @@ namespace gridtools {
         class execute_kernel_functor_mc {
             using grid_t = typename RunFunctorArguments::grid_t;
             using local_domain_t = typename RunFunctorArguments::local_domain_t;
-            using reduction_data_t = typename RunFunctorArguments::reduction_data_t;
 
           public:
-            GT_FUNCTION execute_kernel_functor_mc(
-                const local_domain_t &local_domain, const grid_t &grid, reduction_data_t &reduction_data)
-                : m_local_domain(local_domain), m_grid(grid), m_reduction_data(reduction_data) {}
+            GT_FUNCTION execute_kernel_functor_mc(const local_domain_t &local_domain, const grid_t &grid)
+                : m_local_domain(local_domain), m_grid(grid) {}
 
             template <class ExecutionInfo>
             GT_FUNCTION void operator()(const ExecutionInfo &execution_info) const {
                 using iterate_domain_t = GT_META_CALL(gridtools::_impl::get_iterate_domain_type, RunFunctorArguments);
 
-                iterate_domain_t it_domain(m_local_domain, m_reduction_data.initial_value());
+                iterate_domain_t it_domain(m_local_domain);
 
                 gridtools::for_each<typename RunFunctorArguments::loop_intervals_t>(
                     gridtools::_impl::interval_functor_mc<RunFunctorArguments, ExecutionInfo>(
                         it_domain, m_grid, execution_info));
-
-                m_reduction_data.assign(omp_get_thread_num(), it_domain.reduction_value());
             }
 
           private:
             const local_domain_t &m_local_domain;
             const grid_t &m_grid;
-            reduction_data_t &m_reduction_data;
         };
 
     } // namespace strgrid

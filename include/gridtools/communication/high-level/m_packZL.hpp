@@ -34,8 +34,8 @@
   For information: http://eth-cscs.github.io/gridtools/
 */
 
-#include "../../common/generic_metafunctions/gt_integer_sequence.hpp"
 #include "../../common/halo_descriptor.hpp"
+#include "../../meta/utility.hpp"
 
 template <typename value_type>
 __global__ void m_packZLKernel(const value_type *__restrict__ d_data,
@@ -170,7 +170,7 @@ void m_packZL(array_t const &d_data_array,
     if (nbx == 0 || nby == 0 || nbz == 0)
         return;
 
-#ifdef CUDAMSG
+#ifdef GCL_CUDAMSG
     printf("PackZL Launch grid (%d,%d,%d) with (%d,%d) threads tot: %dx%dx%d\n", nbx, nby, nbz, ntx, nty, nx, ny, nz);
 
     // just some timing stuff
@@ -190,7 +190,7 @@ void m_packZL(array_t const &d_data_array,
         // clang-format off
       m_packZLKernel<<<blocks, threads, 0, ZL_stream>>>(d_data_array[i], d_msgbufTab, d_msgsize, halo_d, nx, ny, i);
 // clang-format on
-#ifdef CUDAMSG
+#ifdef GCL_CUDAMSG
         int err = cudaGetLastError();
         if (err != cudaSuccess) {
             printf("Kernel launch failure\n");
@@ -201,7 +201,7 @@ void m_packZL(array_t const &d_data_array,
 
 // more timing stuff and conversion into reasonable units
 // for display
-#ifdef CUDAMSG
+#ifdef GCL_CUDAMSG
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
 
@@ -237,7 +237,7 @@ int call_kernel_ZL(Blocks blocks,
     unsigned int i) {
     m_packZLKernel<<<blocks, threads, b, ZL_stream>>>(d_data, d_msgbufTab, d_msgsize, halo_d, nx, ny, i);
 
-#ifdef CUDAMSG
+#ifdef GCL_CUDAMSG
     int err = cudaGetLastError();
     if (err != cudaSuccess) {
         printf("Kernel launch failure\n");
@@ -254,7 +254,7 @@ void m_packZL_variadic(value_type **d_msgbufTab,
     const gridtools::halo_descriptor halo[3],
     const gridtools::halo_descriptor halo_d[3],
     datas const &d_datas,
-    gridtools::gt_integer_sequence<unsigned int, Ids...>) {
+    gridtools::meta::integer_sequence<unsigned int, Ids...>) {
     // threads per block. Should be at least one warp in x, could be wider in y
     const int ntx = 32;
     const int nty = 8;
@@ -274,7 +274,7 @@ void m_packZL_variadic(value_type **d_msgbufTab,
     if (nbx == 0 || nby == 0 || nbz == 0)
         return;
 
-#ifdef CUDAMSG
+#ifdef GCL_CUDAMSG
     printf("PackZL Launch grid (%d,%d,%d) with (%d,%d) threads tot: %dx%dx%d\n", nbx, nby, nbz, ntx, nty, nx, ny, nz);
 
     // just some timing stuff
@@ -300,7 +300,7 @@ void m_packZL_variadic(value_type **d_msgbufTab,
 
 // more timing stuff and conversion into reasonable units
 // for display
-#ifdef CUDAMSG
+#ifdef GCL_CUDAMSG
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
 

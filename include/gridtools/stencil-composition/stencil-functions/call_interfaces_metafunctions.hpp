@@ -35,61 +35,28 @@
 */
 #pragma once
 
-#include "../../common/defs.hpp"
-#include "../structured_grids/accessor_metafunctions.hpp"
-#include "./call_interfaces_fwd.hpp"
 #include <boost/mpl/count_if.hpp>
 #include <boost/mpl/find_if.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/type_traits/is_same.hpp>
 
+#include "../../common/defs.hpp"
+#include "../accessor_metafunctions.hpp"
+#include "./call_interfaces_fwd.hpp"
+
 namespace gridtools {
     namespace _impl {
-        template <typename T>
-        struct is_function_aggregator : boost::mpl::false_ {};
-
-        template <typename CallerAggregator,
-            int Offi,
-            int Offj,
-            int Offk,
-            typename PassedAccessors,
-            typename ReturnType,
-            int OutArg>
-        struct is_function_aggregator<
-            function_aggregator<CallerAggregator, Offi, Offj, Offk, PassedAccessors, ReturnType, OutArg>>
-            : boost::mpl::true_ {};
-
-        template <typename CallerAggregator,
-            int Offi,
-            int Offj,
-            int Offk,
-            typename PassedAccessors,
-            typename ReturnType,
-            int OutArg>
-        struct is_function_aggregator<
-            function_aggregator_offsets<CallerAggregator, Offi, Offj, Offk, PassedAccessors, ReturnType, OutArg>>
-            : boost::mpl::true_ {};
-
-        template <typename CallerAggregator, int Offi, int Offj, int Offk, typename PassedAccessors>
-        struct is_function_aggregator<
-            function_aggregator_procedure<CallerAggregator, Offi, Offj, Offk, PassedAccessors>> : boost::mpl::true_ {};
-
-        template <typename CallerAggregator, int Offi, int Offj, int Offk, typename PassedAccessors>
-        struct is_function_aggregator<
-            function_aggregator_procedure_offsets<CallerAggregator, Offi, Offj, Offk, PassedAccessors>>
-            : boost::mpl::true_ {};
-
         /** Metafunction to compute the index of the first accessor in the
             list of accessors to be written.
         */
         template <typename Functor>
         struct _get_index_of_first_non_const {
 
-            typedef typename boost::mpl::find_if<typename Functor::arg_list,
+            typedef typename boost::mpl::find_if<typename Functor::param_list,
                 is_accessor_written<typename boost::mpl::_>>::type iter;
 
             typedef typename boost::mpl::if_<
-                typename boost::is_same<iter, typename boost::mpl::end<typename Functor::arg_list>::type>::type,
+                typename boost::is_same<iter, typename boost::mpl::end<typename Functor::param_list>::type>::type,
                 boost::mpl::int_<-1>,
                 typename iter::pos>::type result;
 
@@ -105,8 +72,9 @@ namespace gridtools {
         */
         template <typename Functor>
         struct can_be_a_function {
-            typedef typename boost::mpl::count_if<typename Functor::arg_list, is_accessor_written<boost::mpl::_>>::type
-                type;
+            typedef
+                typename boost::mpl::count_if<typename Functor::param_list, is_accessor_written<boost::mpl::_>>::type
+                    type;
 
             static const bool value = type::value == 1;
         };
@@ -212,9 +180,4 @@ namespace gridtools {
         }
 
     } // namespace _impl
-
-    template <typename Type, typename ArgsMap>
-    struct remap_accessor_type<_impl::wrap_reference<Type>, ArgsMap> {
-        using type = _impl::wrap_reference<Type>;
-    };
 } // namespace gridtools

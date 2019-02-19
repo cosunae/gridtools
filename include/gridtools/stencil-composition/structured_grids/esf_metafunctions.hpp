@@ -34,26 +34,19 @@
   For information: http://eth-cscs.github.io/gridtools/
 */
 #pragma once
+
 #include <boost/mpl/equal.hpp>
 
 #include "../../common/defs.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
+#include "../../meta/macros.hpp"
 #include "./esf.hpp"
 
 namespace gridtools {
 
-    template <typename Esf1, typename Esf2>
-    struct esf_equal {
-        GRIDTOOLS_STATIC_ASSERT((is_esf_descriptor<Esf1>::value && is_esf_descriptor<Esf2>::value), GT_INTERNAL_ERROR);
-        typedef static_bool<boost::is_same<typename Esf1::esf_function, typename Esf2::esf_function>::value &&
-                            boost::mpl::equal<typename Esf1::args_t, typename Esf2::args_t>::value>
-            type;
-    };
-
     template <typename Esf>
-    struct esf_arg_list {
-        GRIDTOOLS_STATIC_ASSERT((is_esf_descriptor<Esf>::value), GT_INTERNAL_ERROR);
-        typedef typename Esf::esf_function::arg_list type;
+    struct esf_param_list {
+        GT_STATIC_ASSERT(is_esf_descriptor<Esf>::value, GT_INTERNAL_ERROR);
+        typedef typename Esf::esf_function::param_list type;
     };
 
     /** Retrieve the extent in esf_descriptor_with_extents
@@ -68,7 +61,7 @@ namespace gridtools {
         using type = Extent;
     };
 
-    GT_META_LAZY_NAMESPASE {
+    GT_META_LAZY_NAMESPACE {
         template <class Esf, class Args>
         struct esf_replace_args;
         template <class F, class OldArgs, class NewArgs>

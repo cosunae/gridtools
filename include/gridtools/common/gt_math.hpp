@@ -34,9 +34,11 @@
   For information: http://eth-cscs.github.io/gridtools/
 */
 #pragma once
+#include <cmath>
+
+#include "defs.hpp"
 #include "host_device.hpp"
 
-#include <cmath>
 namespace gridtools {
 
     /** \ingroup common
@@ -155,7 +157,7 @@ namespace gridtools {
         // long double not supported in device code
         template <typename ErrorTrigger = double>
         GT_FUNCTION_DEVICE double fabs(long double val) {
-            GRIDTOOLS_STATIC_ASSERT((sizeof(ErrorTrigger) == 0), "long double is not supported in device code");
+            GT_STATIC_ASSERT((sizeof(ErrorTrigger) == 0), "long double is not supported in device code");
             return 0.;
         }
 #endif
@@ -214,6 +216,14 @@ namespace gridtools {
         using std::pow;
 #endif
 
+#ifdef __CUDA_ARCH__
+        GT_FUNCTION float sqrt(const float x) { return ::sqrtf(x); }
+
+        GT_FUNCTION double sqrt(const double x) { return ::sqrt(x); }
+#else
+        using std::sqrt;
+#endif
+
 #ifdef __CUDACC__
         // providing the same overload pattern as the std library
         // auto return type to ensure that we do not accidentally cast
@@ -224,7 +234,7 @@ namespace gridtools {
 #ifdef __CUDA_ARCH__
         template <typename ErrorTrigger = int>
         GT_FUNCTION double fmod(long double x, long double y) { // return value double to suppress warning
-            GRIDTOOLS_STATIC_ASSERT(sizeof(ErrorTrigger) != 0, "long double is not supported in device code");
+            GT_STATIC_ASSERT(sizeof(ErrorTrigger) != 0, "long double is not supported in device code");
             return -1.;
         }
 #else
@@ -249,7 +259,7 @@ namespace gridtools {
 #ifdef __CUDA_ARCH__
         template <typename ErrorTrigger = int>
         GT_FUNCTION double trunc(long double val) { // return value double to suppress warning
-            GRIDTOOLS_STATIC_ASSERT(sizeof(ErrorTrigger) != 0, "long double is not supported in device code");
+            GT_STATIC_ASSERT(sizeof(ErrorTrigger) != 0, "long double is not supported in device code");
             return 1.;
         }
 #else

@@ -38,7 +38,7 @@
 #include <type_traits>
 
 #include "../../common/defs.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
+#include "../../meta.hpp"
 
 namespace gridtools {
 
@@ -78,12 +78,12 @@ namespace gridtools {
     /**
      * Metafunction taking extents and yielding an extent containing them
      */
-    GT_META_LAZY_NAMESPASE {
+    GT_META_LAZY_NAMESPACE {
         template <class...>
         struct enclosing_extent;
     }
     GT_META_DELEGATE_TO_LAZY(enclosing_extent, class... Extents, Extents...);
-    GT_META_LAZY_NAMESPASE {
+    GT_META_LAZY_NAMESPACE {
         template <>
         struct enclosing_extent<> {
             using type = extent<>;
@@ -94,26 +94,26 @@ namespace gridtools {
             using type = extent<Is...>;
         };
 
-        template <int_t L_I_Minus,
-            int_t L_I_Plus,
-            int_t L_J_Minus,
-            int_t L_J_Plus,
-            int_t L_K_Minus,
-            int_t L_K_Plus,
-            int_t R_I_Minus,
-            int_t R_I_Plus,
-            int_t R_J_Minus,
-            int_t R_J_Plus,
-            int_t R_K_Minus,
-            int_t R_K_Plus>
-        struct enclosing_extent<extent<L_I_Minus, L_I_Plus, L_J_Minus, L_J_Plus, L_K_Minus, L_K_Plus>,
-            extent<R_I_Minus, R_I_Plus, R_J_Minus, R_J_Plus, R_K_Minus, R_K_Plus>> {
-            using type = extent<(L_I_Minus < R_I_Minus) ? L_I_Minus : R_I_Minus,
-                (L_I_Plus < R_I_Plus) ? R_I_Plus : L_I_Plus,
-                (L_J_Minus < R_J_Minus) ? L_J_Minus : R_J_Minus,
-                (L_J_Plus < R_J_Plus) ? R_J_Plus : L_J_Plus,
-                (L_K_Minus < R_K_Minus) ? L_K_Minus : R_K_Minus,
-                (L_K_Plus < R_K_Plus) ? R_K_Plus : L_K_Plus>;
+        template <int_t IMinus1,
+            int_t IPlus1,
+            int_t JMinus1,
+            int_t JPlus1,
+            int_t KMinus1,
+            int_t KPlus1,
+            int_t IMinus2,
+            int_t IPlus2,
+            int_t JMinus2,
+            int_t JPlus2,
+            int_t KMinus2,
+            int_t KPlus2>
+        struct enclosing_extent<extent<IMinus1, IPlus1, JMinus1, JPlus1, KMinus1, KPlus1>,
+            extent<IMinus2, IPlus2, JMinus2, JPlus2, KMinus2, KPlus2>> {
+            using type = extent<(IMinus1 < IMinus2) ? IMinus1 : IMinus2,
+                (IPlus1 < IPlus2) ? IPlus2 : IPlus1,
+                (JMinus1 < JMinus2) ? JMinus1 : JMinus2,
+                (JPlus1 < JPlus2) ? JPlus2 : JPlus1,
+                (KMinus1 < KMinus2) ? KMinus1 : KMinus2,
+                (KPlus1 < KPlus2) ? KPlus2 : KPlus1>;
         };
 
         template <class... Extents>
@@ -132,8 +132,8 @@ namespace gridtools {
      */
     template <typename Extent1, typename Extent2>
     struct sum_extent {
-        GRIDTOOLS_STATIC_ASSERT(is_extent<Extent1>::value, GT_INTERNAL_ERROR);
-        GRIDTOOLS_STATIC_ASSERT(is_extent<Extent2>::value, GT_INTERNAL_ERROR);
+        GT_STATIC_ASSERT(is_extent<Extent1>::value, GT_INTERNAL_ERROR);
+        GT_STATIC_ASSERT(is_extent<Extent2>::value, GT_INTERNAL_ERROR);
 
         using type = extent<Extent1::iminus::value + Extent2::iminus::value,
             Extent1::iplus::value + Extent2::iplus::value,
@@ -142,4 +142,24 @@ namespace gridtools {
             Extent1::kminus::value + Extent2::kminus::value,
             Extent1::kplus::value + Extent2::kplus::value>;
     };
+
+    struct rt_extent {
+        template <int_t IMinus, int_t IPlus, int_t JMinus, int_t JPlus, int_t KMinus, int_t KPlus, int_t... Rest>
+        constexpr rt_extent(extent<IMinus, IPlus, JMinus, JPlus, KMinus, KPlus, Rest...>)
+            : iminus(IMinus), iplus(IPlus), jminus(JMinus), jplus(JPlus), kminus(KMinus), kplus(KPlus) {}
+        constexpr rt_extent(int_t iminus, int_t iplus, int_t jminus, int_t jplus, int_t kminus, int_t kplus)
+            : iminus(iminus), iplus(iplus), jminus(jminus), jplus(jplus), kminus(kminus), kplus(kplus) {}
+        rt_extent() = default;
+        constexpr bool operator==(const rt_extent &rhs) const {
+            return iminus == rhs.iminus && iplus == rhs.iplus && jminus == rhs.jminus && jplus == rhs.jplus &&
+                   kminus == rhs.kminus && kplus == rhs.kplus;
+        }
+        int_t iminus = 0;
+        int_t iplus = 0;
+        int_t jminus = 0;
+        int_t jplus = 0;
+        int_t kminus = 0;
+        int_t kplus = 0;
+    };
+
 } // namespace gridtools

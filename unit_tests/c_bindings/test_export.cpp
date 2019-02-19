@@ -71,11 +71,15 @@ namespace {
 
     GT_EXPORT_BINDING_WITH_SIGNATURE_1(my_empty, bool(stack_t const &), std::mem_fn(&stack_t::empty));
 
-    template <class T>
-    void assign_impl(T (&obj)[2][2], T val) {
-        obj[0][0] = obj[0][1] = obj[1][0] = obj[1][1] = val;
+    template <class T, size_t size>
+    void assign_impl(T (&obj)[size][size], T val) {
+        for (size_t i = 0; i < size; ++i) {
+            for (size_t j = 0; j < size; ++j) {
+                obj[i][j] = val;
+            }
+        }
     }
-    GT_EXPORT_GENERIC_BINDING_WRAPPED(2, my_assign, assign_impl, (int)(double));
+    GT_EXPORT_GENERIC_BINDING_WRAPPED(2, my_assign, assign_impl, (int, 2)(double, 2));
 
     struct c_bindings_compatible_type {
         c_bindings_compatible_type(const gt_fortran_array_descriptor &) {}
@@ -107,7 +111,7 @@ namespace {
         gt_release(obj);
     }
 
-    const char expected_c_interface[] = R"?(
+    const char expected_c_interface[] = R"?(// This file is generated!
 #pragma once
 
 #include <gridtools/c_bindings/array_descriptor.h>
@@ -140,7 +144,7 @@ void test_c_bindings_and_wrapper_compatible_type_b(gt_fortran_array_descriptor*,
         EXPECT_EQ(strm.str(), expected_c_interface);
     }
 
-    const char expected_fortran_interface[] = R"?(
+    const char expected_fortran_interface[] = R"?(! This file is generated!
 module my_module
 implicit none
   interface

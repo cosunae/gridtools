@@ -38,6 +38,7 @@
 
 #include <array>
 #include <assert.h>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -139,8 +140,8 @@ namespace gridtools {
      */
     template <typename Storage, typename StorageInfo>
     struct data_store {
-        GRIDTOOLS_STATIC_ASSERT(is_storage<Storage>::value, GT_INTERNAL_ERROR_MSG("Passed type is no storage type"));
-        GRIDTOOLS_STATIC_ASSERT(
+        GT_STATIC_ASSERT(is_storage<Storage>::value, GT_INTERNAL_ERROR_MSG("Passed type is no storage type"));
+        GT_STATIC_ASSERT(
             is_storage_info<StorageInfo>::value, GT_INTERNAL_ERROR_MSG("Passed type is no storage_info type"));
         typedef typename Storage::data_t data_t;
         typedef typename Storage::state_machine_t state_machine_t;
@@ -153,10 +154,6 @@ namespace gridtools {
         std::string m_name;
 
       public:
-        // following members are declared in order to have same API as data_store_fields
-        const static uint_t num_of_storages = 1;
-        const static uint_t num_of_components = 1;
-
         /**
          * @brief data_store constructor. This constructor does not trigger an allocation of the required space.
          */
@@ -236,7 +233,7 @@ namespace gridtools {
                 0>
         explicit constexpr data_store(StorageInfo const &info,
             T external_ptr,
-            ownership own = ownership::ExternalCPU,
+            ownership own = ownership::external_cpu,
             std::string const &name = "")
             : m_shared_storage(
                   (info.length() == 0) ? nullptr : (new storage_t(info.padded_total_length(), external_ptr, own))),
@@ -255,7 +252,7 @@ namespace gridtools {
          * @param info StorageInfo instance
          */
         void allocate(StorageInfo const &info) {
-            ASSERT_OR_THROW((!m_shared_storage_info.get() && !m_shared_storage.get()),
+            GT_ASSERT_OR_THROW((!m_shared_storage_info.get() && !m_shared_storage.get()),
                 "This data store has already been allocated.");
             m_shared_storage_info = std::make_shared<storage_info_t>(info);
             m_shared_storage = std::make_shared<storage_t>(m_shared_storage_info->padded_total_length(),
@@ -271,6 +268,15 @@ namespace gridtools {
             m_shared_storage.reset();
         }
 
+        void swap(data_store &other) {
+            using std::swap;
+            swap(m_shared_storage, other.m_shared_storage);
+            swap(m_shared_storage_info, other.m_shared_storage_info);
+            swap(m_name, other.m_name);
+        }
+
+        friend void swap(data_store &a, data_store &b) { a.swap(b); };
+
         /**
          * @brief function to retrieve the size of a dimension (e.g., I, J, or K).
          *
@@ -279,7 +285,7 @@ namespace gridtools {
          */
         template <int Dim>
         auto total_length() const -> decltype(m_shared_storage_info->template total_length<Dim>()) {
-            ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
+            GT_ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
             return m_shared_storage_info->template total_length<Dim>();
         }
 
@@ -297,7 +303,7 @@ namespace gridtools {
          * @return total size
          */
         auto padded_total_length() const -> decltype(m_shared_storage_info->padded_total_length()) {
-            ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
+            GT_ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
             return m_shared_storage_info->padded_total_length();
         }
 
@@ -306,7 +312,7 @@ namespace gridtools {
          * @return inner domain size + halo
          */
         auto total_length() const -> decltype(m_shared_storage_info->total_length()) {
-            ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
+            GT_ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
             return m_shared_storage_info->total_length();
         }
 
@@ -315,7 +321,7 @@ namespace gridtools {
          * @return inner domain size
          */
         auto length() const -> decltype(m_shared_storage_info->length()) {
-            ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
+            GT_ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
             return m_shared_storage_info->length();
         }
 
@@ -323,7 +329,7 @@ namespace gridtools {
          * @brief forward total_lengths() from storage_info
          */
         auto total_lengths() const -> decltype(m_shared_storage_info->total_lengths()) {
-            ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
+            GT_ASSERT_OR_THROW((m_shared_storage_info.get()), "data_store is in a non-initialized state.");
             return m_shared_storage_info->total_lengths();
         }
 

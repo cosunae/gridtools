@@ -45,8 +45,7 @@
  *
  * In the context of stencil computation condition trees correspond to [possibly nested] `if_` constructs or to
  * `switch/case` construct. I.e. the variadic pack within `make_computation` template function signature in it's
- * general form is a sequence of condition trees of computation tokens. Where computation token is either MSS
- * descriptor or reduction descriptor.
+ * general form is a sequence of condition trees of MSS descriptors.
  *
  * This module provides the interface for condition tree manipulations to the rest of stencil computation code base.
  * This interface consists of:
@@ -69,9 +68,8 @@
 #include <type_traits>
 
 #include "../../common/defs.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
-#include "../../common/generic_metafunctions/type_traits.hpp"
 #include "../../common/tuple_util.hpp"
+#include "../../meta.hpp"
 
 #include "condition.hpp"
 
@@ -181,32 +179,19 @@ namespace gridtools {
 
             template <typename Fun>
             struct apply_with_tree_f {
-                template <typename>
-                struct result;
-
-                template <typename T>
-                using res_t = typename result<apply_with_tree_f(T const &)>::type;
-
-                template <typename T>
-                struct result<apply_with_tree_f(T const &)> {
-                    using type = typename std::result_of<Fun(T const &)>::type;
-                };
-
-                template <typename Lhs, typename Rhs, typename C>
-                struct result<apply_with_tree_f(condition<Lhs, Rhs, C> const &)> {
-                    using type = typename std::common_type<res_t<Lhs>, res_t<Rhs>>::type;
-                };
-
                 Fun m_fun;
 
                 template <typename T>
-                res_t<T> operator()(T const &leaf) const {
-                    return m_fun(leaf);
+                void operator()(T const &leaf) const {
+                    m_fun(leaf);
                 }
 
                 template <typename Lhs, typename Rhs, typename C>
-                res_t<condition<Lhs, Rhs, C>> operator()(condition<Lhs, Rhs, C> const &node) const {
-                    return node.m_value() ? this->operator()(node.m_first) : this->operator()(node.m_second);
+                void operator()(condition<Lhs, Rhs, C> const &node) const {
+                    if (node.m_value())
+                        (*this)(node.m_first);
+                    else
+                        (*this)(node.m_second);
                 }
             };
 
@@ -313,8 +298,10 @@ namespace gridtools {
          *           functor invocations return values for all possible branches.
          */
         template <typename Fun, typename... Args>
-        auto apply(Fun &&fun, Args &&... args) const GT_AUTO_RETURN((_impl::condition_tree::apply_with_tree(
-            std::bind(std::forward<Fun>(fun), std::placeholders::_1, std::forward<Args>(args)...))(m_tree)));
+        void apply(Fun &&fun, Args &&... args) const {
+            _impl::condition_tree::apply_with_tree(
+                std::bind(std::forward<Fun>(fun), std::placeholders::_1, std::forward<Args>(args)...))(m_tree);
+        }
     };
 
     /// Empty case specialization.
@@ -326,8 +313,9 @@ namespace gridtools {
         branch_selector(std::tuple<> &&) {}
 
         template <typename Fun, typename... Args>
-        auto apply(Fun &&fun, Args &&... args) const
-            GT_AUTO_RETURN((std::forward<Fun>(fun)(std::tuple<>{}, std::forward<Args>(args)...)));
+        void apply(Fun &&fun, Args &&... args) const {
+            std::forward<Fun>(fun)(std::tuple<>{}, std::forward<Args>(args)...);
+        }
     };
 
     /// Generator for branch_selector

@@ -35,8 +35,14 @@
 */
 #pragma once
 
-#include "../common/defs.hpp"
-#include "../common/generic_metafunctions/meta.hpp"
+#include "../meta/dedup.hpp"
+#include "../meta/defs.hpp"
+#include "../meta/filter.hpp"
+#include "../meta/is_empty.hpp"
+#include "../meta/length.hpp"
+#include "../meta/logical.hpp"
+#include "../meta/macros.hpp"
+#include "../meta/transform.hpp"
 
 namespace gridtools {
 
@@ -62,7 +68,7 @@ namespace gridtools {
             GT_META_DEFINE_ALIAS(apply, meta::filter, (has_same_extent<Extent>::template apply, AllStages));
         };
 
-        GT_META_LAZY_NAMESPASE {
+        GT_META_LAZY_NAMESPACE {
             template <template <class...> class CompoundStage, class Stages>
             struct fuse_stages_with_the_same_extent;
             template <template <class...> class CompoundStage, template <class...> class L, class... Stages>
@@ -86,17 +92,16 @@ namespace gridtools {
 
     } // namespace _impl
 
-    GT_META_LAZY_NAMESPASE {
+    GT_META_LAZY_NAMESPACE {
         template <template <class...> class CompoundStage, class Stages>
         struct fuse_stages {
-            GRIDTOOLS_STATIC_ASSERT(meta::length<Stages>::value > 1, GT_INTERNAL_ERROR);
+            GT_STATIC_ASSERT(meta::length<Stages>::value > 1, GT_INTERNAL_ERROR);
             using all_extents_t = GT_META_CALL(meta::transform, (_impl::get_extent_from_stage, Stages));
             using extents_t = GT_META_CALL(meta::dedup, all_extents_t);
-            GRIDTOOLS_STATIC_ASSERT(!meta::is_empty<extents_t>::value, GT_INTERNAL_ERROR);
+            GT_STATIC_ASSERT(!meta::is_empty<extents_t>::value, GT_INTERNAL_ERROR);
             using stages_grouped_by_extent_t = GT_META_CALL(
                 meta::transform, (_impl::stages_with_the_given_extent<Stages>::template apply, extents_t));
-            GRIDTOOLS_STATIC_ASSERT(
-                (!meta::any_of<meta::is_empty, stages_grouped_by_extent_t>::value), GT_INTERNAL_ERROR);
+            GT_STATIC_ASSERT((!meta::any_of<meta::is_empty, stages_grouped_by_extent_t>::value), GT_INTERNAL_ERROR);
             using type = GT_META_CALL(meta::transform,
                 (_impl::fuse_stages_with_the_same_extent_f<CompoundStage>::template apply, stages_grouped_by_extent_t));
         };

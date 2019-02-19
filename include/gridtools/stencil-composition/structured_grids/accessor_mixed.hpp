@@ -35,12 +35,12 @@
 */
 
 #pragma once
+
 #include "../../common/defs.hpp"
 #include "../../common/dimension.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
 #include "../../common/host_device.hpp"
-#include "../accessor_fwd.hpp"
-#include "../accessor_metafunctions.hpp"
+#include "../../meta.hpp"
+#include "../is_accessor.hpp"
 
 namespace gridtools {
 
@@ -111,7 +111,7 @@ the dimension is chosen
 
     template <typename AccessorType, ushort_t... Inxs>
     struct alias<AccessorType, dimension<Inxs>...> {
-        GRIDTOOLS_STATIC_ASSERT(is_accessor<AccessorType>::value,
+        GT_STATIC_ASSERT(is_accessor<AccessorType>::value,
             "wrong type. If you want to generalize the alias "
             "to something more generic than an offset_tuple "
             "remove this assert.");
@@ -127,13 +127,5 @@ the dimension is chosen
     };
 
     template <typename... Types>
-    struct is_accessor<accessor_mixed<Types...>> : boost::mpl::true_ {};
-
-    template <typename... Types>
-    struct is_grid_accessor<accessor_mixed<Types...>> : boost::mpl::true_ {};
-
-    template <typename Accessor, typename ArgsMap, typename... Pairs>
-    struct remap_accessor_type<accessor_mixed<Accessor, Pairs...>, ArgsMap> {
-        typedef accessor_mixed<typename remap_accessor_type<Accessor, ArgsMap>::type, Pairs...> type;
-    };
+    struct is_accessor<accessor_mixed<Types...>> : std::true_type {};
 } // namespace gridtools

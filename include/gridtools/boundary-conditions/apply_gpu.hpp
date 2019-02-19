@@ -96,7 +96,7 @@ namespace gridtools {
             GT_FUNCTION
             precomputed_pred(precomputed_pred const &) = default;
 
-            template <sign I, sign J, sign K>
+            template <gridtools::sign I, gridtools::sign J, gridtools::sign K>
             GT_FUNCTION bool operator()(direction<I, J, K>) const {
                 return m_values[static_cast<int>(I) + 1][static_cast<int>(J) + 1][static_cast<int>(K) + 1];
             }
@@ -236,7 +236,7 @@ namespace gridtools {
     of the boundary portion may be transposed w.r.t. the kernel
     configuration.
  */
-#define RUN_BC_ON(x, y, z)                                                                                         \
+#define GT_RUN_BC_ON(x, y, z)                                                                                      \
     if (predicate(direction<x, y, z>())) {                                                                         \
         auto const &shape = conf.shape(static_cast<int>(x) + 1, static_cast<int>(y) + 1, static_cast<int>(z) + 1); \
         if ((th[0] < shape.max()) && (th[1] < shape.median()) && (th[2] < shape.min())) {                          \
@@ -262,42 +262,44 @@ namespace gridtools {
             blockIdx.y * blockDim.y + threadIdx.y,
             blockIdx.z * blockDim.z + threadIdx.z};
 
-        RUN_BC_ON(minus_, minus_, minus_);
-        RUN_BC_ON(minus_, minus_, zero_);
-        RUN_BC_ON(minus_, minus_, plus_);
+        GT_RUN_BC_ON(minus_, minus_, minus_);
+        GT_RUN_BC_ON(minus_, minus_, zero_);
+        GT_RUN_BC_ON(minus_, minus_, plus_);
 
-        RUN_BC_ON(minus_, zero_, minus_);
-        RUN_BC_ON(minus_, zero_, zero_);
-        RUN_BC_ON(minus_, zero_, plus_);
+        GT_RUN_BC_ON(minus_, zero_, minus_);
+        GT_RUN_BC_ON(minus_, zero_, zero_);
+        GT_RUN_BC_ON(minus_, zero_, plus_);
 
-        RUN_BC_ON(minus_, plus_, minus_);
-        RUN_BC_ON(minus_, plus_, zero_);
-        RUN_BC_ON(minus_, plus_, plus_);
+        GT_RUN_BC_ON(minus_, plus_, minus_);
+        GT_RUN_BC_ON(minus_, plus_, zero_);
+        GT_RUN_BC_ON(minus_, plus_, plus_);
 
-        RUN_BC_ON(zero_, minus_, minus_);
-        RUN_BC_ON(zero_, minus_, zero_);
-        RUN_BC_ON(zero_, minus_, plus_);
+        GT_RUN_BC_ON(zero_, minus_, minus_);
+        GT_RUN_BC_ON(zero_, minus_, zero_);
+        GT_RUN_BC_ON(zero_, minus_, plus_);
 
-        RUN_BC_ON(zero_, zero_, minus_);
+        GT_RUN_BC_ON(zero_, zero_, minus_);
 
-        RUN_BC_ON(zero_, zero_, plus_);
+        GT_RUN_BC_ON(zero_, zero_, plus_);
 
-        RUN_BC_ON(zero_, plus_, minus_);
-        RUN_BC_ON(zero_, plus_, zero_);
-        RUN_BC_ON(zero_, plus_, plus_);
+        GT_RUN_BC_ON(zero_, plus_, minus_);
+        GT_RUN_BC_ON(zero_, plus_, zero_);
+        GT_RUN_BC_ON(zero_, plus_, plus_);
 
-        RUN_BC_ON(plus_, minus_, minus_);
-        RUN_BC_ON(plus_, minus_, zero_);
-        RUN_BC_ON(plus_, minus_, plus_);
+        GT_RUN_BC_ON(plus_, minus_, minus_);
+        GT_RUN_BC_ON(plus_, minus_, zero_);
+        GT_RUN_BC_ON(plus_, minus_, plus_);
 
-        RUN_BC_ON(plus_, zero_, minus_);
-        RUN_BC_ON(plus_, zero_, zero_);
-        RUN_BC_ON(plus_, zero_, plus_);
+        GT_RUN_BC_ON(plus_, zero_, minus_);
+        GT_RUN_BC_ON(plus_, zero_, zero_);
+        GT_RUN_BC_ON(plus_, zero_, plus_);
 
-        RUN_BC_ON(plus_, plus_, minus_);
-        RUN_BC_ON(plus_, plus_, zero_);
-        RUN_BC_ON(plus_, plus_, plus_);
+        GT_RUN_BC_ON(plus_, plus_, minus_);
+        GT_RUN_BC_ON(plus_, plus_, zero_);
+        GT_RUN_BC_ON(plus_, plus_, plus_);
     }
+
+#undef GT_RUN_BC_ON
 
     /**
        @brief definition of the functions which apply the boundary conditions (arbitrary functions having as argument
@@ -360,8 +362,8 @@ namespace gridtools {
                 m_conf,
                 m_halo_descriptors,
                 data_field_views...);
-            cudaDeviceSynchronize();
 #ifndef NDEBUG
+            cudaDeviceSynchronize();
             cudaError_t error = cudaGetLastError();
             if (error != cudaSuccess) {
                 fprintf(stderr, "CUDA ERROR: %s in %s at line %dn", cudaGetErrorString(error), __FILE__, __LINE__);
@@ -440,12 +442,12 @@ namespace gridtools {
         */
         template <typename Direction, typename... DataFieldViews>
         void apply_it(DataFieldViews &... data_field_views) const {
-            uint_t nx = halo_descriptors[0].loop_high_bound_outside(Direction::I) -
-                        halo_descriptors[0].loop_low_bound_outside(Direction::I) + 1;
-            uint_t ny = halo_descriptors[1].loop_high_bound_outside(Direction::J) -
-                        halo_descriptors[1].loop_low_bound_outside(Direction::J) + 1;
-            uint_t nz = halo_descriptors[2].loop_high_bound_outside(Direction::K) -
-                        halo_descriptors[2].loop_low_bound_outside(Direction::K) + 1;
+            uint_t nx = halo_descriptors[0].loop_high_bound_outside(Direction::i) -
+                        halo_descriptors[0].loop_low_bound_outside(Direction::i) + 1;
+            uint_t ny = halo_descriptors[1].loop_high_bound_outside(Direction::j) -
+                        halo_descriptors[1].loop_low_bound_outside(Direction::j) + 1;
+            uint_t nz = halo_descriptors[2].loop_high_bound_outside(Direction::k) -
+                        halo_descriptors[2].loop_low_bound_outside(Direction::k) + 1;
             uint_t nbx = (nx == 0) ? (1) : ((nx + ntx - 1) / ntx);
             uint_t nby = (ny == 0) ? (1) : ((ny + nty - 1) / nty);
             uint_t nbz = (nz == 0) ? (1) : ((nz + ntz - 1) / ntz);
@@ -453,15 +455,15 @@ namespace gridtools {
             if (nx > 0 || ny > 0 || nz > 0)
                 loop_kernel<<<blocks, threads>>>(boundary_function,
                     Direction(),
-                    halo_descriptors[0].loop_low_bound_outside(Direction::I),
-                    halo_descriptors[1].loop_low_bound_outside(Direction::J),
-                    halo_descriptors[2].loop_low_bound_outside(Direction::K),
+                    halo_descriptors[0].loop_low_bound_outside(Direction::i),
+                    halo_descriptors[1].loop_low_bound_outside(Direction::j),
+                    halo_descriptors[2].loop_low_bound_outside(Direction::k),
                     nx,
                     ny,
                     nz,
                     data_field_views...);
-            cudaDeviceSynchronize();
 #ifndef NDEBUG
+            cudaDeviceSynchronize();
             cudaError_t error = cudaGetLastError();
             if (error != cudaSuccess) {
                 fprintf(stderr, "CUDA ERROR: %s in %s at line %dn", cudaGetErrorString(error), __FILE__, __LINE__);
@@ -538,8 +540,6 @@ namespace gridtools {
                 apply_it<direction<plus_, plus_, zero_>>(data_field_views...);
             if (predicate(direction<plus_, plus_, plus_>()))
                 apply_it<direction<plus_, plus_, plus_>>(data_field_views...);
-
-            cudaDeviceSynchronize();
         }
     };
 

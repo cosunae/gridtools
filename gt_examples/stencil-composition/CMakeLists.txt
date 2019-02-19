@@ -1,48 +1,19 @@
-if( STRUCTURED_GRIDS )
-    set( EXAMPLES_SRCFILES )
-    list( APPEND EXAMPLES_SRCFILES copy_stencil horizontal_diffusion_limited)
+if( GT_TESTS_STRUCTURED_GRID )
+    set( EXAMPLES_SRCFILES copy_stencil horizontal_diffusion_limited tridiagonal_solver)
 
-      if(ENABLE_HOST)
-        foreach(srcfile IN LISTS EXAMPLES_SRCFILES )
-          add_executable(${srcfile}_host_naive_ex   ${srcfile}.cpp ${INC_ALL})
-          add_executable(${srcfile}_host_block_ex   ${srcfile}.cpp ${INC_ALL})
-          target_link_libraries(${srcfile}_host_naive_ex ${exe_LIBS})
-          target_link_libraries(${srcfile}_host_block_ex ${exe_LIBS})
-          target_compile_definitions(${srcfile}_host_naive_ex PUBLIC ${HOST_BACKEND_DEFINE} "BACKEND_STRATEGY_NAIVE")
-          target_compile_definitions(${srcfile}_host_block_ex PUBLIC ${HOST_BACKEND_DEFINE})
-          if ( INSTALL_GT_EXAMPLES )
-              install(TARGETS
-                      ${srcfile}_host_naive_ex
-                      ${srcfile}_host_block_ex
-                      DESTINATION "${INSTALL_GT_EXAMPLES_PATH}/examples/bin" )
-          endif()
-        endforeach()
-    endif(ENABLE_HOST)
-
-    if(ENABLE_MC)
+    if(GT_ENABLE_TARGET_MC)
         foreach(srcfile IN LISTS EXAMPLES_SRCFILES)
-          add_executable(${srcfile}_mc_ex   ${srcfile}.cpp ${INC_ALL})
-          target_link_libraries(${srcfile}_mc_ex ${exe_LIBS})
-          target_compile_definitions(${srcfile}_mc_ex PUBLIC ${MC_BACKEND_DEFINE})
-
-          if ( INSTALL_GT_EXAMPLES )
-              install(TARGETS
-                      ${srcfile}_mc_ex
-                      DESTINATION "${INSTALL_GT_EXAMPLES_PATH}/examples/bin" )
-          endif()
+            add_executable(${srcfile}_mc_ex   ${srcfile}.cpp)
+            target_link_libraries(${srcfile}_mc_ex GridToolsTestMC )
+            install_example(${srcfile}_mc_ex)
         endforeach()
-    endif(ENABLE_MC)
+    endif(GT_ENABLE_TARGET_MC)
 
-    if(ENABLE_CUDA)
+    if(GT_ENABLE_TARGET_CUDA)
         foreach(srcfile IN LISTS EXAMPLES_SRCFILES )
-           cuda_add_executable( ${srcfile}_cuda_ex ${srcfile}.cu ${GTEST_FILES} OPTIONS ${GPU_SPECIFIC_FLAGS} "-D${CUDA_BACKEND_DEFINE}")
-           target_link_libraries(${srcfile}_cuda_ex ${exe_LIBS})
-
-          if ( INSTALL_GT_EXAMPLES )
-              install(TARGETS
-                      ${srcfile}_cuda_ex
-                      DESTINATION "${INSTALL_GT_EXAMPLES_PATH}/examples/bin" )
-          endif()
-            endforeach()
-      endif(ENABLE_CUDA)
+            add_executable( ${srcfile}_cuda_ex ${srcfile}.cu )
+            target_link_libraries(${srcfile}_cuda_ex GridToolsTestCUDA )
+            install_example(${srcfile}_cuda_ex)
+        endforeach()
+    endif(GT_ENABLE_TARGET_CUDA)
 endif()

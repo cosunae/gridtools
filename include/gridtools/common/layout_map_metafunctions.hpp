@@ -41,7 +41,7 @@
 #include <boost/mpl/range_c.hpp>
 #include <boost/mpl/vector_c.hpp>
 
-#include "generic_metafunctions/gt_integer_sequence.hpp"
+#include "../meta/utility.hpp"
 #include "generic_metafunctions/replace.hpp"
 #include "generic_metafunctions/sequence_unpacker.hpp"
 #include "layout_map.hpp"
@@ -105,10 +105,10 @@ namespace gridtools {
     template <typename Layout, bool... Bitmask>
     struct filter_layout<Layout, selector<Bitmask...>> {
         typedef selector<Bitmask...> dim_selector_t;
-        GRIDTOOLS_STATIC_ASSERT((is_selector<dim_selector_t>::value), "Error: Dimension selector is wrong");
+        GT_STATIC_ASSERT((is_selector<dim_selector_t>::value), "Error: Dimension selector is wrong");
         typedef boost::mpl::vector_c<bool, Bitmask...> dim_selector_vec_t;
-        GRIDTOOLS_STATIC_ASSERT((is_layout_map<Layout>::value), "Error: need a layout map type");
-        GRIDTOOLS_STATIC_ASSERT(
+        GT_STATIC_ASSERT((is_layout_map<Layout>::value), "Error: need a layout map type");
+        GT_STATIC_ASSERT(
             (sizeof...(Bitmask) >= Layout::masked_length), "Error: need to specifiy at least 4 dimensions");
 
         template <uint_t NumNullDims, typename Seq_>
@@ -190,15 +190,15 @@ namespace gridtools {
 
         // build an extended layout
         template <int_t... Indices, int_t... InitialIndices>
-        struct build_ext_layout<InsertLocation::post, gt_integer_sequence<int_t, Indices...>, InitialIndices...> {
+        struct build_ext_layout<InsertLocation::post, meta::integer_sequence<int_t, Indices...>, InitialIndices...> {
             typedef layout_map<InitialIndices..., Indices...> type;
         };
         template <int_t... Indices, int_t... InitialIndices>
-        struct build_ext_layout<InsertLocation::pre, gt_integer_sequence<int_t, Indices...>, InitialIndices...> {
+        struct build_ext_layout<InsertLocation::pre, meta::integer_sequence<int_t, Indices...>, InitialIndices...> {
             typedef layout_map<Indices..., InitialIndices...> type;
         };
 
-        using seq = typename make_gt_integer_sequence<int_t, NExtraDim>::type;
+        using seq = meta::make_integer_sequence<int_t, NExtraDim>;
 
         typedef typename build_ext_layout<Location, seq, impl::inc_<Args, NExtraDim>::value...>::type type;
     };

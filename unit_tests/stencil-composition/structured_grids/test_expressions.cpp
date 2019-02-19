@@ -38,7 +38,7 @@
 #include <gridtools/stencil-composition/stencil-composition.hpp>
 
 using namespace gridtools;
-using namespace gridtools::enumtype;
+using namespace gridtools::execute;
 using namespace gridtools::expressions;
 
 /*
@@ -70,11 +70,6 @@ struct iterate_domain_mock {
     GT_FUNCTION auto operator()(expr<Op, Args...> const &arg) const
         GT_AUTO_RETURN(expressions::evaluation::value(*this, arg));
 };
-
-namespace gridtools {
-    template <>
-    struct is_iterate_domain<iterate_domain_mock> : boost::mpl::true_ {};
-} // namespace gridtools
 
 using val = accessor_mock<float>;
 

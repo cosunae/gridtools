@@ -104,31 +104,24 @@ namespace halo_exchange_3D_all_2 {
                     c(ii, jj, kk) = triple_t<USE_DOUBLE>();
                 }
             }
-//   a(0,0,0) = triple_t<USE_DOUBLE>(3000+gridtools::PID, 4000+gridtools::PID, 5000+gridtools::PID);
-//   b(0,0,0) = triple_t<USE_DOUBLE>(3010+gridtools::PID, 4010+gridtools::PID, 5010+gridtools::PID);
-//   c(0,0,0) = triple_t<USE_DOUBLE>(3020+gridtools::PID, 4020+gridtools::PID, 5020+gridtools::PID);
 
-/* The pattern type is defined with the layouts, data types and
-   number of dimensions.
+        /* The pattern type is defined with the layouts, data types and
+           number of dimensions.
 
-   The logical assumption done in the program is that 'i' is the
-   first dimension (rows), 'j' is the second, and 'k' is the
-   third. The first layout states that 'i' is the second dimension
-   in order of strides, while 'j' is the first and 'k' is the third
-   (just by looking at the initialization loops this shoule be
-   clear).
+           The logical assumption done in the program is that 'i' is the
+           first dimension (rows), 'j' is the second, and 'k' is the
+           third. The first layout states that 'i' is the second dimension
+           in order of strides, while 'j' is the first and 'k' is the third
+           (just by looking at the initialization loops this shoule be
+           clear).
 
-   The second layout states that the first dimension in data ('i')
-   identify also the first dimension in the communicator. Logically,
-   moving on 'i' dimension from processot (p,q,r) will lead you
-   logically to processor (p+1,q,r). The other dimensions goes as
-   the others.
-*/
-#ifndef PACKING_TYPE
-#define PACKING_TYPE gridtools::version_manual
-#endif
-
-        static const int version = PACKING_TYPE;
+           The second layout states that the first dimension in data ('i')
+           identify also the first dimension in the communicator. Logically,
+           moving on 'i' dimension from processot (p,q,r) will lead you
+           logically to processor (p+1,q,r). The other dimensions goes as
+           the others.
+        */
+        static const int version = gridtools::version_manual;
 
         typedef gridtools::halo_exchange_dynamic_ut<layoutmap,
             gridtools::layout_map<0, 1, 2>,
@@ -240,7 +233,7 @@ namespace halo_exchange_3D_all_2 {
         // vect[2] = c.ptr;
         MPI_Barrier(gridtools::GCL_WORLD);
 
-        gettimeofday(&start_tv, NULL);
+        gettimeofday(&start_tv, nullptr);
 
         he.post_receives();
 #ifdef VECTOR_INTERFACE
@@ -249,14 +242,14 @@ namespace halo_exchange_3D_all_2 {
         he.pack(vect[0], vect[1], vect[2]);
 #endif
         //  MPI_Barrier(MPI_COMM_WORLD);
-        gettimeofday(&stop1_tv, NULL);
+        gettimeofday(&stop1_tv, nullptr);
 
         he.do_sends();
         // MPI_Barrier(MPI_COMM_WORLD);
         he.wait();
 
         // MPI_Barrier(MPI_COMM_WORLD);
-        gettimeofday(&stop2_tv, NULL);
+        gettimeofday(&stop2_tv, nullptr);
 
 #ifdef VECTOR_INTERFACE
         he.unpack(vect);
@@ -265,7 +258,7 @@ namespace halo_exchange_3D_all_2 {
 #endif
 
         MPI_Barrier(MPI_COMM_WORLD);
-        gettimeofday(&stop3_tv, NULL);
+        gettimeofday(&stop3_tv, nullptr);
 
         lapse_time1 =
             ((static_cast<double>(stop1_tv.tv_sec) + 1 / 1000000.0 * static_cast<double>(stop1_tv.tv_usec)) -
@@ -688,7 +681,7 @@ namespace halo_exchange_3D_all_2 {
 
 #ifdef STANDALONE
 int main(int argc, char **argv) {
-#ifdef _USE_GPU_
+#ifdef GT_USE_GPU
     device_binding();
 #endif
 

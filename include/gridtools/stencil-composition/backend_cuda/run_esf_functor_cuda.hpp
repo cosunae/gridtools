@@ -37,8 +37,11 @@
 
 #include "../../common/defs.hpp"
 #include "../../common/generic_metafunctions/for_each.hpp"
-#include "../../common/generic_metafunctions/meta.hpp"
 #include "../../common/host_device.hpp"
+#include "../../meta/first.hpp"
+#include "../../meta/is_empty.hpp"
+#include "../../meta/macros.hpp"
+#include "../../meta/pop_front.hpp"
 
 namespace gridtools {
     namespace _impl {
@@ -75,7 +78,7 @@ namespace gridtools {
         template <class StageGroups, class ItDomain>
         GT_FUNCTION static void exec(ItDomain &it_domain) {
 
-            GRIDTOOLS_STATIC_ASSERT(!meta::is_empty<StageGroups>::value, GT_INTERNAL_ERROR);
+            GT_STATIC_ASSERT(!meta::is_empty<StageGroups>::value, GT_INTERNAL_ERROR);
             using first_t = GT_META_CALL(meta::first, StageGroups);
             using rest_t = GT_META_CALL(meta::pop_front, StageGroups);
 

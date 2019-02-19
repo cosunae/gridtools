@@ -48,17 +48,19 @@ namespace gridtools {
                     m_procedures[generic_name].push_back(concrete_name);
                 }
                 friend std::ostream &operator<<(std::ostream &strm, fortran_generics const &obj) {
+                    const std::string prefix = "    ";
                     for (auto &&item : obj.m_procedures) {
                         strm << "  interface " << item.first << "\n";
-                        strm << "    procedure ";
+                        std::string line = "";
+                        line += "procedure ";
                         bool need_comma = false;
                         for (auto &&procedure : item.second) {
                             if (need_comma)
-                                strm << ", ";
-                            strm << procedure;
+                                line += ", ";
+                            line += procedure;
                             need_comma = true;
                         }
-                        strm << "\n";
+                        strm << wrap_line(line, prefix);
                         strm << "  end interface\n";
                     }
                     return strm;
@@ -126,6 +128,8 @@ namespace gridtools {
                     return fortran_type_name<long double>();
                 case gt_fk_SignedChar:
                     return fortran_type_name<signed char>();
+                default:
+                    assert(false && "Invalid element kind");
                 }
             }
         } // namespace _impl
@@ -141,7 +145,7 @@ namespace gridtools {
                 auto next_it = it + max_line_length - line_divider.size() - current_prefix.size();
                 while (*(next_it - 1) != ',') {
                     --next_it;
-                    ASSERT_OR_THROW(next_it != line.begin() + 1, "Too long line cannot be wrapped");
+                    GT_ASSERT_OR_THROW(next_it != line.begin() + 1, "Too long line cannot be wrapped");
                 }
 
                 ret.append(current_prefix);
@@ -159,7 +163,8 @@ namespace gridtools {
         }
 
         void generate_c_interface(std::ostream &strm) {
-            strm << "\n#pragma once\n\n";
+            strm << "// This file is generated!\n";
+            strm << "#pragma once\n\n";
             strm << "#include <gridtools/c_bindings/array_descriptor.h>\n";
             strm << "#include <gridtools/c_bindings/handle.h>\n\n";
             strm << "#ifdef __cplusplus\n";
@@ -172,7 +177,8 @@ namespace gridtools {
         }
 
         void generate_fortran_interface(std::ostream &strm, std::string const &module_name) {
-            strm << "\nmodule " << module_name << "\n";
+            strm << "! This file is generated!\n";
+            strm << "module " << module_name << "\n";
             strm << "implicit none\n";
             strm << "  interface\n\n";
             strm << _impl::get_entities<_impl::fortran_bindings_traits>();

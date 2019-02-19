@@ -3,7 +3,7 @@ macro( gridtools_setup_CUDA )
 
   set( GRIDTOOLS_HAVE_CUDA 0 )
 
-  if( ENABLE_CUDA )
+  if( GT_ENABLE_TARGET_CUDA )
     if( ENABLE_CUDA_REQUIRED )
       set( _find_cuda REQUIRED )
     else()
@@ -67,7 +67,7 @@ macro( gridtools_setup_CUDA )
 
         list( APPEND GRIDTOOLS_SYSTEM_INCLUDE_DIRS ${CUDA_INCLUDE_DIRS} )
         list( APPEND GRIDTOOLS_LINK_LIBRARIES ${CUDA_CUDART_LIBRARY} )
-        list( APPEND GRIDTOOLS_DEFINITIONS "-D_USE_GPU_" )
+        list( APPEND GRIDTOOLS_DEFINITIONS "-DGT_USE_GPU" )
         
 
         string( REPLACE "." "" CUDA_VERSION_INT ${CUDA_VERSION} )

@@ -37,61 +37,42 @@
 
 #include <tuple>
 
-#ifdef PEDANTIC
+#ifdef GT_PEDANTIC
 #include <boost/mpl/size.hpp>
 #endif
 
 #include "../../common/defs.hpp"
-#include "../../common/generic_metafunctions/type_traits.hpp"
+#include "../../meta/type_traits.hpp"
 #include "../arg.hpp"
 #include "./esf.hpp"
 
 namespace gridtools {
 
-    /*!
-       \fn esf_descriptor<ESF, ...> make_esf(plc1, plc2, plc3, ...)
-       \brief Function to create a Elementary Stencil Function
-       \param plc{i} placeholder which represents the i-th argument to the functor ESF
-
-       Use this function to associate a stencil functor (stage) to
-       arguments (actually, placeholders to arguments)
+    /**
+     * @brief Function to create a descriptor for a stage (ij-pass over a grid)
+     *
+     * Extents are derived from the stage definitions.
      */
-
-    /*!
-       \fn mss_descriptor<...> make_esf(ExecutionEngine, esf1, esf2, ...)
-       \brief Function to create a Multistage Stencil that can then be executed
-       \param esf{i}  i-th Elementary Stencil Function created with make_esf or a list specified as independent ESFs
-       created with make independent
-
-       Use this function to create a multi-stage stencil computation
-     */
-
-    /*!
-       \fn independent_esf<...> make_independent(esf1, esf2, ...)
-       \brief Function to create a list of independent Elementary Styencil Functions
-
-       \param esf{i}  (must be i>=2) The max{i} Elementary Stencil Functions in the argument list will be treated as
-       independent
-
-       Function to create a list of independent Elementary Styencil Functions. This is used to let the library compute
-       tight bounds on blocks to be used by backends
-     */
-
     template <typename ESF, typename... Args>
-    esf_descriptor<ESF, std::tuple<Args...>> make_stage(Args...) {
-        GRIDTOOLS_STATIC_ASSERT(conjunction<is_plh<Args>...>::value, "Malformed make_stage");
+    constexpr esf_descriptor<ESF, std::tuple<Args...>> make_stage(Args...) {
+        GT_STATIC_ASSERT(conjunction<is_plh<Args>...>::value, "Malformed make_stage");
 #ifdef PEDANTIC // find a way to enable this check also with generic accessors
-        GRIDTOOLS_STATIC_ASSERT(sizeof...(Args) == boost::mpl::size<typename ESF::arg_list>::value,
+        GT_STATIC_ASSERT(sizeof...(Args) == boost::mpl::size<typename ESF::arg_list>::value,
             "wrong number of arguments passed to the make_esf");
 #endif
         return {};
     }
 
+    /**
+     * @brief Function to create a descriptor for a stage (ij-pass over a grid)
+     *
+     * Extents are given as a template argument.
+     */
     template <typename ESF, typename Extent, typename... Args>
-    esf_descriptor_with_extent<ESF, Extent, std::tuple<Args...>> make_stage_with_extent(Args...) {
-        GRIDTOOLS_STATIC_ASSERT(conjunction<is_plh<Args>...>::value, "Malformed make_stage");
+    constexpr esf_descriptor_with_extent<ESF, Extent, std::tuple<Args...>> make_stage_with_extent(Args...) {
+        GT_STATIC_ASSERT(conjunction<is_plh<Args>...>::value, "Malformed make_stage");
 #ifdef PEDANTIC // find a way to enable this check also with generic accessors
-        GRIDTOOLS_STATIC_ASSERT((sizeof...(Args) == boost::mpl::size<typename ESF::arg_list>::value),
+        GT_STATIC_ASSERT(sizeof...(Args) == boost::mpl::size<typename ESF::arg_list>::value,
             "wrong number of arguments passed to the make_esf");
 #endif
         return {};

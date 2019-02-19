@@ -34,9 +34,9 @@
   For information: http://eth-cscs.github.io/gridtools/
 */
 #include <boost/mpl/vector.hpp>
+
 #include <gtest/gtest.h>
 
-#include "backend_select.hpp"
 #include <gridtools/common/defs.hpp>
 #include <gridtools/common/halo_descriptor.hpp>
 #include <gridtools/stencil-composition/accessor.hpp>
@@ -46,23 +46,24 @@
 #include <gridtools/stencil-composition/make_computation.hpp>
 #include <gridtools/stencil-composition/make_stage.hpp>
 #include <gridtools/stencil-composition/make_stencils.hpp>
+#include <gridtools/tools/backend_select.hpp>
 #include <gridtools/tools/verifier.hpp>
 
 namespace gridtools {
     struct test_functor {
-        using in = accessor<0, enumtype::in, extent<>, 3>;
-        using out = accessor<1, enumtype::inout, extent<>, 3>;
-        using arg_list = boost::mpl::vector<in, out>;
+        using in = accessor<0, intent::in, extent<>, 3>;
+        using out = accessor<1, intent::inout, extent<>, 3>;
+        using param_list = make_param_list<in, out>;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval) {
+        GT_FUNCTION static void apply(Evaluation &eval) {
             eval(out()) = eval(in());
         }
     };
 
     class fixture : public ::testing::Test {
         using storage_info_t = backend_t::storage_traits_t::storage_info_t<0, 3>;
-        using storage_t = backend_t::storage_traits_t::data_store_t<gridtools::float_type, storage_info_t>;
+        using storage_t = backend_t::storage_traits_t::data_store_t<float_type, storage_info_t>;
         using p_tmp = tmp_arg<2, storage_t>;
 
         const uint_t m_d1 = 6, m_d2 = 6, m_d3 = 10;
@@ -74,11 +75,11 @@ namespace gridtools {
         using p_in = arg<0, storage_t>;
         using p_out = arg<1, storage_t>;
 
-        computation<void, p_in, p_out> m_computation;
+        computation<p_in, p_out> m_computation;
 
         fixture()
             : m_computation{make_computation<backend_t>(m_grid,
-                  make_multistage(enumtype::execute<enumtype::forward>(),
+                  make_multistage(execute::forward(),
                       make_stage<test_functor>(p_in{}, p_tmp{}),
                       make_stage<test_functor>(p_tmp{}, p_out{})))} {}
 
@@ -91,7 +92,7 @@ namespace gridtools {
         bool verify(storage_t const &lhs, storage_t const &rhs) {
             lhs.sync();
             rhs.sync();
-#if FLOAT_PRECISION == 4
+#if GT_FLOAT_PRECISION == 4
             const double precision = 1e-6;
 #else
             const double precision = 1e-10;

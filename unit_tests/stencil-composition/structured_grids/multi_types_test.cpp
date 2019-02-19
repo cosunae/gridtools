@@ -33,10 +33,11 @@
 
   For information: http://eth-cscs.github.io/gridtools/
 */
-#include "backend_select.hpp"
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
+
 #include <gridtools/stencil-composition/stencil-composition.hpp>
 #include <gridtools/stencil-composition/stencil-functions/stencil-functions.hpp>
+#include <gridtools/tools/backend_select.hpp>
 #include <gridtools/tools/verifier.hpp>
 
 #ifdef __CUDACC__
@@ -64,7 +65,7 @@ namespace multi_types_test {
     using gridtools::level;
 
     using namespace gridtools;
-    using namespace enumtype;
+    using namespace execute;
     using namespace expressions;
 
     using axis_t = axis<1>;
@@ -148,13 +149,13 @@ namespace multi_types_test {
     }
 
     struct function0 {
-        typedef accessor<0, enumtype::in> in;
-        typedef accessor<1, enumtype::inout> out;
+        typedef accessor<0, intent::in> in;
+        typedef accessor<1, intent::inout> out;
 
-        typedef boost::mpl::vector<in, out> arg_list;
+        typedef make_param_list<in, out> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval, region) {
+        GT_FUNCTION static void apply(Evaluation &eval, region) {
             eval(out()).i = eval(in()).i + 1;
             eval(out()).j = eval(in()).j + 1;
             eval(out()).k = eval(in()).k + 1;
@@ -162,13 +163,13 @@ namespace multi_types_test {
     };
 
     struct function1 {
-        typedef accessor<0, enumtype::inout> out;
-        typedef accessor<1, enumtype::in> in;
+        typedef accessor<0, intent::inout> out;
+        typedef accessor<1, intent::in> in;
 
-        typedef boost::mpl::vector<out, in> arg_list;
+        typedef make_param_list<out, in> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval, region) {
+        GT_FUNCTION static void apply(Evaluation &eval, region) {
 #ifdef FUNCTIONS_PROCEDURES
             type1 result;
             call_proc<function0, region>::with(eval, in(), result);
@@ -182,38 +183,31 @@ namespace multi_types_test {
 
     struct function2 {
 
-        typedef accessor<0, enumtype::inout> out;
-        typedef accessor<1, enumtype::in> in;
-        typedef accessor<2, enumtype::in> temp;
+        typedef accessor<0, intent::inout> out;
+        typedef accessor<1, intent::in> in;
+        typedef accessor<2, intent::in> temp;
 
-        typedef boost::mpl::vector<out, in, temp> arg_list;
+        typedef make_param_list<out, in, temp> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval, region) {
+        GT_FUNCTION static void apply(Evaluation &eval, region) {
             eval(out()) = eval(temp()) + eval(in());
         }
     };
 
     struct function3 {
 
-        typedef accessor<0, enumtype::inout> out;
-        typedef accessor<1, enumtype::in> temp;
-        typedef accessor<2, enumtype::in> in;
+        typedef accessor<0, intent::inout> out;
+        typedef accessor<1, intent::in> temp;
+        typedef accessor<2, intent::in> in;
 
-        typedef boost::mpl::vector<out, temp, in> arg_list;
+        typedef make_param_list<out, temp, in> param_list;
 
         template <typename Evaluation>
-        GT_FUNCTION static void Do(Evaluation &eval, region) {
+        GT_FUNCTION static void apply(Evaluation &eval, region) {
             eval(out()) = eval(temp()) - eval(in());
         }
     };
-
-    /*
-     * The following operators and structs are for debugging only
-     */
-    std::ostream &operator<<(std::ostream &s, function1 const) { return s << "function1"; }
-    std::ostream &operator<<(std::ostream &s, function2 const) { return s << "function2"; }
-    std::ostream &operator<<(std::ostream &s, function3 const) { return s << "function3"; }
 
     bool test(uint_t x, uint_t y, uint_t z) {
 
@@ -253,11 +247,11 @@ namespace multi_types_test {
             p_field2() = field2,
             p_field3() = field3,
             gridtools::make_multistage // mss_descriptor
-            (execute<forward>(),
+            (execute::forward(),
                 gridtools::make_stage<function1>(p_temp(), p_field1()),
                 gridtools::make_stage<function2>(p_field2(), p_field1(), p_temp())),
             gridtools::make_multistage // mss_descriptor
-            (execute<backward>(),
+            (execute::backward(),
                 gridtools::make_stage<function1>(p_temp(), p_field1()),
                 gridtools::make_stage<function3>(p_field3(), p_temp(), p_field1())));
 

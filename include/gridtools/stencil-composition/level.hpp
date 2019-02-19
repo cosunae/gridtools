@@ -38,7 +38,7 @@
 #include <type_traits>
 
 #include "../common/defs.hpp"
-#include "../common/generic_metafunctions/meta.hpp"
+#include "../meta/macros.hpp"
 
 namespace gridtools {
 
@@ -60,10 +60,9 @@ namespace gridtools {
     struct level {
         // check offset and splitter value ranges
         // (note that non negative splitter values simplify the index computation)
-        GRIDTOOLS_STATIC_ASSERT(Splitter >= 0 && Offset != 0, "check offset and splitter value ranges \n\
+        GT_STATIC_ASSERT(Splitter >= 0 && Offset != 0, "check offset and splitter value ranges \n\
          (note that non negative splitter values simplify the index computation)");
-        GRIDTOOLS_STATIC_ASSERT(
-            -OffsetLimit <= Offset && Offset <= OffsetLimit, "check offset and splitter value ranges \n\
+        GT_STATIC_ASSERT(-OffsetLimit <= Offset && Offset <= OffsetLimit, "check offset and splitter value ranges \n\
          (note that non negative splitter values simplify the index computation)");
 
         // define splitter, level offset and offset limit
